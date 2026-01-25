@@ -73,6 +73,19 @@ export {
   getUserAgent,
   getDashScopeClient,
   applyQwenHeaders,
+  // Debug utilities
+  isDebugEnabled,
+  getDebugLogPath,
+  startQwenDebugRequest,
+  logQwenDebugResponse,
+  logDebugMessage,
+} from "./src/plugin";
+
+// Debug types
+export type {
+  QwenDebugContext,
+  QwenDebugRequestMeta,
+  QwenDebugResponseMeta,
 } from "./src/plugin";
 
 // Qwen OAuth Device Flow - ONLY functions, class, and types

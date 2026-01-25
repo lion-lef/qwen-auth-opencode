@@ -61,3 +61,17 @@ export {
   QWEN_HEADERS,
   applyQwenHeaders,
 } from "./headers";
+
+// Debug exports
+export {
+  isDebugEnabled,
+  getDebugLogPath,
+  startQwenDebugRequest,
+  logQwenDebugResponse,
+  logDebugMessage,
+} from "./debug";
+export type {
+  QwenDebugContext,
+  QwenDebugRequestMeta,
+  QwenDebugResponseMeta,
+} from "./debug";

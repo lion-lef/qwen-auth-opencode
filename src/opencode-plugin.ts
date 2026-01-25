@@ -1,11 +1,13 @@
 /**
  * OpenCode Plugin Implementation for Qwen Authentication
- * Follows the OpenCode plugin architecture (similar to codex.ts and antigravity-auth)
+ * Follows the OpenCode plugin architecture (similar to codex.ts, antigravity-auth, and gemini-auth)
  *
  * Provides:
  * - Qwen OAuth Device Flow (compatible with chat.qwen.ai)
+ * - Headless environment support with appropriate instructions
  * - API Key authentication (for DashScope API)
  * - Request interception for authentication header injection
+ * - Debug logging support (set QWEN_AUTH_DEBUG=1 to enable)
  */
 
 import { QwenOAuthDeviceFlow } from "./qwen-oauth";
@@ -22,6 +24,8 @@ import {
   OAUTH_DUMMY_KEY,
   applyQwenHeaders,
   openBrowser,
+  isHeadlessEnvironment,
+  logDebugMessage,
 } from "./plugin";
 
 // Re-export for backward compatibility
@@ -80,15 +84,26 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
             try {
               const authInfo = await flow.startAuthorization();
 
-              // Open browser automatically
-              openBrowser(authInfo.verificationUriComplete);
+              // Check if running in headless environment
+              const isHeadless = isHeadlessEnvironment();
+              logDebugMessage(`[Qwen Auth] Headless environment: ${isHeadless}`);
 
+              // Open browser automatically (non-headless only)
+              if (!isHeadless) {
+                openBrowser(authInfo.verificationUriComplete);
+              }
+
+              // Qwen uses device code flow (RFC 8628) - no callback server needed
+              // Token exchange happens via polling, not OAuth redirect
               return {
                 url: authInfo.verificationUriComplete,
-                instructions: `Visit ${authInfo.verificationUri} and enter code: ${authInfo.userCode}\n\nOr click the link that opened in your browser.`,
+                instructions: isHeadless
+                  ? `Visit ${authInfo.verificationUri} and enter code: ${authInfo.userCode}\n\nOr open this URL directly: ${authInfo.verificationUriComplete}`
+                  : "Complete the sign-in flow in your browser. We'll automatically detect when you're done.",
                 method: "auto" as const,
                 async callback() {
                   try {
+                    // Poll for tokens using device code flow
                     const credentials = await flow.waitForAuthorization();
 
                     // Save credentials locally
@@ -99,6 +114,8 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
                       expiresAt: credentials.expiresAt,
                     });
 
+                    logDebugMessage("[Qwen Auth] OAuth authorization successful");
+
                     return {
                       type: "success" as const,
                       refresh: credentials.refreshToken || "",
@@ -107,12 +124,14 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
                     };
                   } catch (error) {
                     console.error("Qwen OAuth authorization failed:", error);
+                    logDebugMessage(`[Qwen Auth] OAuth authorization failed: ${error}`);
                     return { type: "failed" as const };
                   }
                 },
               };
             } catch (error) {
               console.error("Failed to start Qwen OAuth flow:", error);
+              logDebugMessage(`[Qwen Auth] Failed to start OAuth flow: ${error}`);
               throw error;
             }
           },
@@ -172,6 +191,8 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
               type: "api_key",
               apiKey: apiKey,
             });
+
+            logDebugMessage("[Qwen Auth] API key authentication successful");
 
             return {
               type: "success" as const,
