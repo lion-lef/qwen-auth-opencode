@@ -3,8 +3,12 @@
  * Focused on OpenCode plugin integration with Qwen
  */
 
-/** Qwen provider identifier for OpenCode */
-export const QWEN_PROVIDER_ID = "qwen" as const;
+/**
+ * Provider identifier for OpenCode
+ * Must match the provider ID in models.dev (https://models.dev/api.json)
+ * OpenCode uses "alibaba" as the provider ID for Qwen/DashScope models
+ */
+export const QWEN_PROVIDER_ID = "alibaba" as const;
 
 /** Qwen API base URL endpoints */
 export const QWEN_API_ENDPOINTS = {
