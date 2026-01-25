@@ -1,23 +1,17 @@
 /**
  * Configuration loader for qwen-auth plugin
- * Handles loading configuration from various sources
+ * Handles loading configuration from environment and files
  */
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { QwenAuthConfig, validateConfig, createDefaultApiKeyConfig } from "./schema";
-import { AUTH_METHODS } from "../constants";
 
 /** Environment variable names for configuration */
 const ENV_VARS = {
   apiKey: "QWEN_API_KEY",
-  jwtPrivateKey: "QWEN_JWT_PRIVATE_KEY",
-  jwtKeyId: "QWEN_JWT_KEY_ID",
-  jwtIssuer: "QWEN_JWT_ISSUER",
-  oauthClientId: "QWEN_OAUTH_CLIENT_ID",
-  oauthClientSecret: "QWEN_OAUTH_CLIENT_SECRET",
-  authMethod: "QWEN_AUTH_METHOD",
+  dashScopeApiKey: "DASHSCOPE_API_KEY",
   debug: "QWEN_AUTH_DEBUG",
   useInternational: "QWEN_USE_INTERNATIONAL",
 } as const;
@@ -30,21 +24,18 @@ function getConfigPaths(workingDir?: string): string[] {
 
   // Working directory config
   if (workingDir) {
-    paths.push(join(workingDir, ".opencode.json"));
     paths.push(join(workingDir, "opencode.json"));
-    paths.push(join(workingDir, ".qwen-auth.json"));
+    paths.push(join(workingDir, ".opencode.json"));
   }
 
   // Home directory config
   const home = homedir();
   paths.push(join(home, ".opencode.json"));
   paths.push(join(home, ".config", "opencode", "config.json"));
-  paths.push(join(home, ".config", "qwen-auth", "config.json"));
 
   // XDG config
   const xdgConfig = process.env.XDG_CONFIG_HOME || join(home, ".config");
   paths.push(join(xdgConfig, "opencode", "config.json"));
-  paths.push(join(xdgConfig, "qwen-auth", "config.json"));
 
   return paths;
 }
@@ -53,54 +44,13 @@ function getConfigPaths(workingDir?: string): string[] {
  * Loads configuration from environment variables
  */
 export function loadFromEnvironment(): Partial<QwenAuthConfig> | null {
-  const apiKey = process.env[ENV_VARS.apiKey];
-  const authMethod = process.env[ENV_VARS.authMethod];
+  const apiKey = process.env[ENV_VARS.apiKey] || process.env[ENV_VARS.dashScopeApiKey];
   const debug = process.env[ENV_VARS.debug] === "true";
   const useInternational = process.env[ENV_VARS.useInternational] === "true";
 
-  // API Key authentication from environment
   if (apiKey) {
     return {
-      method: AUTH_METHODS.API_KEY,
       apiKey: { apiKey },
-      debug,
-      useInternationalEndpoint: useInternational,
-    };
-  }
-
-  // JWT authentication from environment
-  const jwtPrivateKey = process.env[ENV_VARS.jwtPrivateKey];
-  const jwtKeyId = process.env[ENV_VARS.jwtKeyId];
-  const jwtIssuer = process.env[ENV_VARS.jwtIssuer];
-
-  if (jwtPrivateKey && jwtKeyId && jwtIssuer) {
-    return {
-      method: AUTH_METHODS.JWT,
-      jwt: {
-        privateKey: jwtPrivateKey,
-        keyId: jwtKeyId,
-        issuer: jwtIssuer,
-        expirationSeconds: 3600,
-        algorithm: "RS256",
-      },
-      debug,
-      useInternationalEndpoint: useInternational,
-    };
-  }
-
-  // OAuth authentication from environment
-  const oauthClientId = process.env[ENV_VARS.oauthClientId];
-  const oauthClientSecret = process.env[ENV_VARS.oauthClientSecret];
-
-  if (oauthClientId && oauthClientSecret) {
-    return {
-      method: AUTH_METHODS.OAUTH,
-      oauth: {
-        clientId: oauthClientId,
-        clientSecret: oauthClientSecret,
-        redirectUri: "http://localhost:8765/callback",
-        scopes: ["openid", "profile"],
-      },
       debug,
       useInternationalEndpoint: useInternational,
     };
@@ -121,13 +71,13 @@ export function loadFromFile(filePath: string): Partial<QwenAuthConfig> | null {
     const content = readFileSync(filePath, "utf-8");
     const parsed = JSON.parse(content);
 
-    // Check if this is an opencode config file
+    // Check if this is an opencode config file with qwen provider
     if (parsed.providers?.qwen) {
       return extractQwenConfig(parsed.providers.qwen);
     }
 
     // Check if this is a standalone qwen-auth config
-    if (parsed.method || parsed.apiKey || parsed.jwt || parsed.oauth) {
+    if (parsed.apiKey) {
       return parsed;
     }
 
@@ -143,23 +93,13 @@ export function loadFromFile(filePath: string): Partial<QwenAuthConfig> | null {
 function extractQwenConfig(providerConfig: Record<string, unknown>): Partial<QwenAuthConfig> {
   const config: Partial<QwenAuthConfig> = {};
 
-  // Determine auth method
-  if (providerConfig.apiKey) {
-    config.method = AUTH_METHODS.API_KEY;
+  if (typeof providerConfig.apiKey === "string") {
     config.apiKey = {
-      apiKey: providerConfig.apiKey as string,
-      baseUrl: providerConfig.baseUrl as string | undefined,
+      apiKey: providerConfig.apiKey,
+      baseUrl: typeof providerConfig.baseUrl === "string" ? providerConfig.baseUrl : undefined,
     };
-  } else if (providerConfig.jwt) {
-    config.method = AUTH_METHODS.JWT;
-    config.jwt = providerConfig.jwt as QwenAuthConfig["jwt"];
-  } else if (providerConfig.oauth) {
-    config.method = AUTH_METHODS.OAUTH;
-    config.oauth = providerConfig.oauth as QwenAuthConfig["oauth"];
-  }
-
-  if (providerConfig.security) {
-    config.security = providerConfig.security as QwenAuthConfig["security"];
+  } else if (typeof providerConfig.apiKey === "object" && providerConfig.apiKey !== null) {
+    config.apiKey = providerConfig.apiKey as { apiKey: string; baseUrl?: string };
   }
 
   if (providerConfig.debug !== undefined) {
@@ -215,14 +155,16 @@ export function loadConfig(workingDir?: string): QwenAuthConfig {
   }
 
   // Check for API key in environment as last resort
-  const apiKey = process.env[ENV_VARS.apiKey];
+  const apiKey = process.env[ENV_VARS.apiKey] || process.env[ENV_VARS.dashScopeApiKey];
   if (apiKey) {
     return createDefaultApiKeyConfig(apiKey);
   }
 
-  throw new Error(
-    "No valid qwen-auth configuration found. Please set QWEN_API_KEY environment variable or create a configuration file."
-  );
+  // Return empty config - Qwen OAuth does not require pre-configuration
+  return {
+    debug: false,
+    useInternationalEndpoint: false,
+  };
 }
 
 /**
@@ -230,8 +172,8 @@ export function loadConfig(workingDir?: string): QwenAuthConfig {
  */
 export function hasConfig(workingDir?: string): boolean {
   try {
-    loadConfig(workingDir);
-    return true;
+    const config = loadConfig(workingDir);
+    return config.apiKey !== undefined;
   } catch {
     return false;
   }

@@ -6,70 +6,38 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   validateConfig,
   createDefaultApiKeyConfig,
-  createDefaultJwtConfig,
-  createDefaultOAuthConfig,
   QwenAuthConfigSchema,
 } from "../src/config/schema";
 import { loadFromEnvironment } from "../src/config/loader";
-import { AUTH_METHODS } from "../src/constants";
 
 describe("Configuration Schema", () => {
   describe("validateConfig", () => {
     it("should validate API key config", () => {
       const config = {
-        method: AUTH_METHODS.API_KEY,
         apiKey: { apiKey: "test-api-key-12345678" },
       };
 
       const validated = validateConfig(config);
 
-      expect(validated.method).toBe(AUTH_METHODS.API_KEY);
       expect(validated.apiKey?.apiKey).toBe("test-api-key-12345678");
     });
 
-    it("should validate JWT config", () => {
+    it("should validate config with base URL override", () => {
       const config = {
-        method: AUTH_METHODS.JWT,
-        jwt: {
-          privateKey: "-----BEGIN PRIVATE KEY-----...",
-          keyId: "key-123",
-          issuer: "test-issuer",
+        apiKey: {
+          apiKey: "test-api-key-12345678",
+          baseUrl: "https://custom.endpoint.com/v1",
         },
       };
 
       const validated = validateConfig(config);
 
-      expect(validated.method).toBe(AUTH_METHODS.JWT);
-      expect(validated.jwt?.keyId).toBe("key-123");
-    });
-
-    it("should validate OAuth config", () => {
-      const config = {
-        method: AUTH_METHODS.OAUTH,
-        oauth: {
-          clientId: "client-123",
-          clientSecret: "secret-456",
-        },
-      };
-
-      const validated = validateConfig(config);
-
-      expect(validated.method).toBe(AUTH_METHODS.OAUTH);
-      expect(validated.oauth?.clientId).toBe("client-123");
-    });
-
-    it("should fail when auth config missing for method", () => {
-      const config = {
-        method: AUTH_METHODS.API_KEY,
-        // Missing apiKey config
-      };
-
-      expect(() => validateConfig(config)).toThrow();
+      expect(validated.apiKey?.apiKey).toBe("test-api-key-12345678");
+      expect(validated.apiKey?.baseUrl).toBe("https://custom.endpoint.com/v1");
     });
 
     it("should apply default values", () => {
       const config = {
-        method: AUTH_METHODS.API_KEY,
         apiKey: { apiKey: "test-key" },
       };
 
@@ -78,38 +46,46 @@ describe("Configuration Schema", () => {
       expect(validated.debug).toBe(false);
       expect(validated.useInternationalEndpoint).toBe(false);
     });
+
+    it("should validate empty config (OAuth will be used)", () => {
+      const config = {};
+
+      const validated = validateConfig(config);
+
+      expect(validated.debug).toBe(false);
+      expect(validated.useInternationalEndpoint).toBe(false);
+    });
+
+    it("should validate config with debug enabled", () => {
+      const config = {
+        apiKey: { apiKey: "test-key" },
+        debug: true,
+      };
+
+      const validated = validateConfig(config);
+
+      expect(validated.debug).toBe(true);
+    });
+
+    it("should validate config with international endpoint", () => {
+      const config = {
+        apiKey: { apiKey: "test-key" },
+        useInternationalEndpoint: true,
+      };
+
+      const validated = validateConfig(config);
+
+      expect(validated.useInternationalEndpoint).toBe(true);
+    });
   });
 
   describe("createDefaultApiKeyConfig", () => {
     it("should create valid API key config", () => {
       const config = createDefaultApiKeyConfig("my-api-key");
 
-      expect(config.method).toBe(AUTH_METHODS.API_KEY);
       expect(config.apiKey?.apiKey).toBe("my-api-key");
       expect(config.debug).toBe(false);
-    });
-  });
-
-  describe("createDefaultJwtConfig", () => {
-    it("should create valid JWT config", () => {
-      const config = createDefaultJwtConfig("private-key", "key-id", "issuer");
-
-      expect(config.method).toBe(AUTH_METHODS.JWT);
-      expect(config.jwt?.privateKey).toBe("private-key");
-      expect(config.jwt?.keyId).toBe("key-id");
-      expect(config.jwt?.issuer).toBe("issuer");
-      expect(config.jwt?.algorithm).toBe("RS256");
-    });
-  });
-
-  describe("createDefaultOAuthConfig", () => {
-    it("should create valid OAuth config", () => {
-      const config = createDefaultOAuthConfig("client-id", "client-secret");
-
-      expect(config.method).toBe(AUTH_METHODS.OAUTH);
-      expect(config.oauth?.clientId).toBe("client-id");
-      expect(config.oauth?.clientSecret).toBe("client-secret");
-      expect(config.oauth?.redirectUri).toBe("http://localhost:8765/callback");
+      expect(config.useInternationalEndpoint).toBe(false);
     });
   });
 });
@@ -127,37 +103,31 @@ describe("Configuration Loader", () => {
   });
 
   describe("loadFromEnvironment", () => {
-    it("should load API key from environment", () => {
+    it("should load QWEN_API_KEY from environment", () => {
       process.env.QWEN_API_KEY = "env-api-key-123";
 
       const config = loadFromEnvironment();
 
       expect(config).not.toBeNull();
-      expect(config?.method).toBe(AUTH_METHODS.API_KEY);
       expect(config?.apiKey?.apiKey).toBe("env-api-key-123");
     });
 
-    it("should load JWT config from environment", () => {
-      process.env.QWEN_JWT_PRIVATE_KEY = "private-key";
-      process.env.QWEN_JWT_KEY_ID = "key-id";
-      process.env.QWEN_JWT_ISSUER = "issuer";
+    it("should load DASHSCOPE_API_KEY from environment", () => {
+      process.env.DASHSCOPE_API_KEY = "dashscope-api-key-456";
 
       const config = loadFromEnvironment();
 
       expect(config).not.toBeNull();
-      expect(config?.method).toBe(AUTH_METHODS.JWT);
-      expect(config?.jwt?.privateKey).toBe("private-key");
+      expect(config?.apiKey?.apiKey).toBe("dashscope-api-key-456");
     });
 
-    it("should load OAuth config from environment", () => {
-      process.env.QWEN_OAUTH_CLIENT_ID = "client-id";
-      process.env.QWEN_OAUTH_CLIENT_SECRET = "client-secret";
+    it("should prefer QWEN_API_KEY over DASHSCOPE_API_KEY", () => {
+      process.env.QWEN_API_KEY = "qwen-key";
+      process.env.DASHSCOPE_API_KEY = "dashscope-key";
 
       const config = loadFromEnvironment();
 
-      expect(config).not.toBeNull();
-      expect(config?.method).toBe(AUTH_METHODS.OAUTH);
-      expect(config?.oauth?.clientId).toBe("client-id");
+      expect(config?.apiKey?.apiKey).toBe("qwen-key");
     });
 
     it("should return null when no config in environment", () => {
@@ -183,58 +153,14 @@ describe("Configuration Loader", () => {
 
       expect(config?.useInternationalEndpoint).toBe(true);
     });
-  });
-});
 
-describe("Security Config Schema", () => {
-  it("should validate rate limit config", () => {
-    const config = {
-      method: AUTH_METHODS.API_KEY,
-      apiKey: { apiKey: "test-key" },
-      security: {
-        rateLimit: {
-          maxAttempts: 10,
-          windowMs: 120000,
-          lockoutMs: 600000,
-          enabled: true,
-        },
-      },
-    };
+    it("should set debug to false when env var is not 'true'", () => {
+      process.env.QWEN_API_KEY = "api-key";
+      process.env.QWEN_AUTH_DEBUG = "false";
 
-    const validated = validateConfig(config);
+      const config = loadFromEnvironment();
 
-    expect(validated.security?.rateLimit?.maxAttempts).toBe(10);
-    expect(validated.security?.rateLimit?.windowMs).toBe(120000);
-  });
-
-  it("should apply rate limit defaults", () => {
-    const config = {
-      method: AUTH_METHODS.API_KEY,
-      apiKey: { apiKey: "test-key" },
-      security: {
-        rateLimit: {},
-      },
-    };
-
-    const validated = validateConfig(config);
-
-    expect(validated.security?.rateLimit?.maxAttempts).toBe(5);
-    expect(validated.security?.rateLimit?.enabled).toBe(true);
-  });
-
-  it("should validate encryption settings", () => {
-    const config = {
-      method: AUTH_METHODS.API_KEY,
-      apiKey: { apiKey: "test-key" },
-      security: {
-        encryptCredentials: true,
-        auditLogging: true,
-      },
-    };
-
-    const validated = validateConfig(config);
-
-    expect(validated.security?.encryptCredentials).toBe(true);
-    expect(validated.security?.auditLogging).toBe(true);
+      expect(config?.debug).toBe(false);
+    });
   });
 });

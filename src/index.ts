@@ -1,37 +1,30 @@
 /**
- * qwen-auth - Authentication plugin for OpenCode
+ * qwen-auth - OpenCode Authentication Plugin for Qwen Models
  *
  * This plugin provides authentication support for Qwen models through
- * the OpenCode platform. It supports multiple authentication methods:
+ * the OpenCode platform. It supports:
  * - Qwen OAuth Device Flow (recommended, compatible with chat.qwen.ai)
- * - API Key authentication (for DashScope API)
- * - JWT authentication (for service-to-service)
+ * - DashScope API Key authentication
  *
  * @example
  * ```typescript
- * // For OpenCode integration (recommended)
+ * // For OpenCode plugin registration (recommended)
  * import { QwenAuthPlugin } from 'qwen-auth';
  *
- * // Register the plugin with OpenCode
+ * // In your opencode.json plugins section:
+ * // { "plugins": { "qwen-auth": {} } }
+ *
+ * // Or for programmatic use:
  * const hooks = await QwenAuthPlugin(pluginInput);
- *
- * // For standalone usage
- * import { load, AuthManager } from 'qwen-auth';
- *
- * const result = await load({ workingDir: process.cwd() });
- * const response = await fetch(`${result.baseUrl}/chat/completions`, {
- *   headers: result.headers,
- *   body: JSON.stringify({ model: 'qwen-turbo', messages: [...] }),
- * });
  * ```
  */
 
-// OpenCode Plugin (recommended)
+// OpenCode Plugin (main export)
 export { QwenAuthPlugin, default as QwenPlugin } from "./opencode-plugin";
 export {
-  loadCredentials as loadPluginCredentials,
-  saveCredentials as savePluginCredentials,
-  clearCredentials as clearPluginCredentials,
+  loadCredentials,
+  saveCredentials,
+  clearCredentials,
   OAUTH_DUMMY_KEY,
 } from "./opencode-plugin";
 
@@ -46,8 +39,6 @@ export {
   refreshAccessToken,
   openBrowser,
   QWEN_OAUTH_CONSTANTS,
-  QWEN_OAUTH_PORT,
-  QWEN_OAUTH_REDIRECT_PATH,
 } from "./qwen-oauth";
 export type {
   QwenCredentials,
@@ -55,69 +46,30 @@ export type {
   DeviceAuthorizationResponse,
 } from "./qwen-oauth";
 
-// Legacy plugin exports (for backward compatibility)
-export { load, unload, initPlugin, getAuthManager, AuthManager } from "./plugin";
-export type { PluginContext, PluginResult } from "./plugin";
-
 // Configuration exports
 export {
   loadConfig,
   validateConfig,
   createDefaultApiKeyConfig,
-  createDefaultJwtConfig,
-  createDefaultOAuthConfig,
   QwenAuthConfigSchema,
 } from "./config";
 export type {
   QwenAuthConfig,
   ApiKeyConfig,
-  JwtConfig,
-  OAuthConfig,
-  RateLimitConfig,
-  SecurityConfig,
 } from "./config";
 
 // Authentication exports
 export {
   ApiKeyAuthProvider,
-  JwtAuthProvider,
-  OAuthAuthProvider,
   validateApiKeyFormat,
   maskApiKey,
-  validateJwtConfig,
-  validateOAuthConfig,
 } from "./auth";
 export type {
   AuthProvider,
   AuthResult,
   TokenInfo,
   ApiRequestConfig,
-  OAuthAuthorizationResponse,
-  OAuthTokenResponse,
-  JwtClaims,
-  AuthEvent,
-  AuthEventType,
-  AuthEventHandler,
 } from "./auth";
-
-// Security exports
-export {
-  RateLimiter,
-  getGlobalRateLimiter,
-  encrypt,
-  decrypt,
-  generateSecureToken,
-} from "./security";
-export type { EncryptedData } from "./security";
-
-// Storage exports
-export {
-  loadCredentials,
-  saveCredentials,
-  deleteCredentials,
-  hasCredentials,
-} from "./storage";
-export type { StoredCredentials } from "./storage";
 
 // Utility exports
 export { createLogger, getLogger } from "./utils";
@@ -130,7 +82,6 @@ export {
   QWEN_MODELS,
   AUTH_METHODS,
   TOKEN_SETTINGS,
-  RATE_LIMIT_CONFIG,
   QWEN_OAUTH_CONFIG,
 } from "./constants";
 export type { QwenModelId, AuthMethod } from "./constants";

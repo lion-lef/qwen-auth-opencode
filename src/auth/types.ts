@@ -58,69 +58,9 @@ export interface AuthProvider {
 }
 
 /**
- * OAuth authorization response
- */
-export interface OAuthAuthorizationResponse {
-  authorizationUrl: string;
-  state: string;
-  codeVerifier?: string;
-}
-
-/**
- * OAuth token response
- */
-export interface OAuthTokenResponse {
-  accessToken: string;
-  tokenType: string;
-  expiresIn: number;
-  refreshToken?: string;
-  scope?: string;
-  idToken?: string;
-}
-
-/**
- * JWT claims
- */
-export interface JwtClaims {
-  iss: string;
-  sub?: string;
-  aud?: string;
-  exp: number;
-  iat: number;
-  jti?: string;
-  [key: string]: unknown;
-}
-
-/**
  * API request configuration
  */
 export interface ApiRequestConfig {
   headers: Record<string, string>;
   baseUrl: string;
 }
-
-/**
- * Authentication event types
- */
-export type AuthEventType =
-  | "authenticated"
-  | "token_refreshed"
-  | "token_expired"
-  | "authentication_failed"
-  | "revoked"
-  | "rate_limited";
-
-/**
- * Authentication event
- */
-export interface AuthEvent {
-  type: AuthEventType;
-  timestamp: number;
-  method: AuthMethod;
-  details?: Record<string, unknown>;
-}
-
-/**
- * Authentication event handler
- */
-export type AuthEventHandler = (event: AuthEvent) => void;
