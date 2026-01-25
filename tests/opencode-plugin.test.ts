@@ -220,7 +220,13 @@ describe("OpenCode Plugin", () => {
       expect(mockProvider.models["coder-model"].cost.output).toBe(0);
 
       expect(mockProvider.models["vision-model"].id).toBe("vision-model");
-      expect(mockProvider.models["vision-model"].attachment).toBe(true); // Vision model supports attachments
+      expect(mockProvider.models["vision-model"].capabilities.attachment).toBe(true); // Vision model supports attachments
+
+      // Verify OAuth models have the required api property for OpenCode
+      expect(mockProvider.models["coder-model"].api).toBeDefined();
+      expect(mockProvider.models["coder-model"].api.url).toBe("https://portal.qwen.ai/v1");
+      expect(mockProvider.models["vision-model"].api).toBeDefined();
+      expect(mockProvider.models["vision-model"].api.url).toBe("https://portal.qwen.ai/v1");
 
       // Existing models should be preserved
       expect(mockProvider.models["qwen-turbo"]).toBeDefined();

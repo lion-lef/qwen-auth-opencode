@@ -68,55 +68,103 @@ export type QwenModelId = keyof typeof QWEN_MODELS;
 export type AuthMethod = (typeof AUTH_METHODS)[keyof typeof AUTH_METHODS];
 
 /**
+ * OAuth API configuration for portal.qwen.ai
+ * Used for OAuth-authenticated requests
+ */
+export const QWEN_OAUTH_API = {
+  id: "alibaba",
+  url: "https://portal.qwen.ai/v1",
+  npm: "@ai-sdk/openai-compatible",
+} as const;
+
+/**
  * OAuth-specific models available through portal.qwen.ai
  * These are special model aliases used by the Qwen OAuth tier
  * (same as qwen-code's QWEN_OAUTH_MODELS)
+ *
+ * Note: These models include the full structure required by OpenCode's Model type,
+ * including the `api` property that specifies the OAuth endpoint (portal.qwen.ai)
+ * rather than the DashScope API endpoint.
  */
 export const QWEN_OAUTH_MODELS = {
   "coder-model": {
     id: "coder-model",
+    providerID: QWEN_PROVIDER_ID,
+    api: QWEN_OAUTH_API,
     name: "Qwen Coder (OAuth)",
-    description: "The latest Qwen Coder model from Alibaba Cloud ModelStudio (version: qwen3-coder-plus-2025-09-23)",
-    family: "qwen",
-    attachment: false,
-    reasoning: false,
-    tool_call: true,
-    temperature: true,
-    release_date: "2025-09-23",
-    modalities: {
-      input: ["text"],
-      output: ["text"],
+    capabilities: {
+      temperature: true,
+      reasoning: false,
+      attachment: false,
+      toolcall: true,
+      input: {
+        text: true,
+        audio: false,
+        image: false,
+        video: false,
+        pdf: false,
+      },
+      output: {
+        text: true,
+        audio: false,
+        image: false,
+        video: false,
+        pdf: false,
+      },
     },
     cost: {
       input: 0,
       output: 0,
+      cache: {
+        read: 0,
+        write: 0,
+      },
     },
     limit: {
       context: 1048576,
       output: 65536,
     },
+    status: "active" as const,
+    options: {},
   },
   "vision-model": {
     id: "vision-model",
+    providerID: QWEN_PROVIDER_ID,
+    api: QWEN_OAUTH_API,
     name: "Qwen Vision (OAuth)",
-    description: "The latest Qwen Vision model from Alibaba Cloud ModelStudio (version: qwen3-vl-plus-2025-09-23)",
-    family: "qwen",
-    attachment: true,
-    reasoning: false,
-    tool_call: true,
-    temperature: true,
-    release_date: "2025-09-23",
-    modalities: {
-      input: ["text", "image"],
-      output: ["text"],
+    capabilities: {
+      temperature: true,
+      reasoning: false,
+      attachment: true,
+      toolcall: true,
+      input: {
+        text: true,
+        audio: false,
+        image: true,
+        video: false,
+        pdf: false,
+      },
+      output: {
+        text: true,
+        audio: false,
+        image: false,
+        video: false,
+        pdf: false,
+      },
     },
     cost: {
       input: 0,
       output: 0,
+      cache: {
+        read: 0,
+        write: 0,
+      },
     },
     limit: {
       context: 131072,
       output: 8192,
     },
+    status: "active" as const,
+    options: {},
   },
 } as const;

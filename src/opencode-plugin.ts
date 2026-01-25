@@ -59,13 +59,13 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
 
         // Add OAuth-specific models to the provider's model list
         // These models are available through portal.qwen.ai OAuth
+        // The models include the full OpenCode Model structure with the `api` property
+        // pointing to portal.qwen.ai instead of the DashScope API
         if (provider.models) {
           for (const [modelId, modelConfig] of Object.entries(QWEN_OAUTH_MODELS)) {
-            provider.models[modelId] = {
-              ...modelConfig,
-              // Mark as free tier (zero cost)
-              cost: { input: 0, output: 0 },
-            };
+            // Cast to any to satisfy TypeScript since provider.models expects Model type
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            provider.models[modelId] = modelConfig as any;
           }
           logDebugMessage(`[Qwen Auth] Added OAuth models to provider: ${Object.keys(QWEN_OAUTH_MODELS).join(", ")}`);
         }
