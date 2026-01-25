@@ -66,3 +66,57 @@ export const QWEN_MODELS = {
 
 export type QwenModelId = keyof typeof QWEN_MODELS;
 export type AuthMethod = (typeof AUTH_METHODS)[keyof typeof AUTH_METHODS];
+
+/**
+ * OAuth-specific models available through portal.qwen.ai
+ * These are special model aliases used by the Qwen OAuth tier
+ * (same as qwen-code's QWEN_OAUTH_MODELS)
+ */
+export const QWEN_OAUTH_MODELS = {
+  "coder-model": {
+    id: "coder-model",
+    name: "Qwen Coder (OAuth)",
+    description: "The latest Qwen Coder model from Alibaba Cloud ModelStudio (version: qwen3-coder-plus-2025-09-23)",
+    family: "qwen",
+    attachment: false,
+    reasoning: false,
+    tool_call: true,
+    temperature: true,
+    release_date: "2025-09-23",
+    modalities: {
+      input: ["text"],
+      output: ["text"],
+    },
+    cost: {
+      input: 0,
+      output: 0,
+    },
+    limit: {
+      context: 1048576,
+      output: 65536,
+    },
+  },
+  "vision-model": {
+    id: "vision-model",
+    name: "Qwen Vision (OAuth)",
+    description: "The latest Qwen Vision model from Alibaba Cloud ModelStudio (version: qwen3-vl-plus-2025-09-23)",
+    family: "qwen",
+    attachment: true,
+    reasoning: false,
+    tool_call: true,
+    temperature: true,
+    release_date: "2025-09-23",
+    modalities: {
+      input: ["text", "image"],
+      output: ["text"],
+    },
+    cost: {
+      input: 0,
+      output: 0,
+    },
+    limit: {
+      context: 131072,
+      output: 8192,
+    },
+  },
+} as const;

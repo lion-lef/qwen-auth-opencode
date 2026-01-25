@@ -191,6 +191,61 @@ describe("OpenCode Plugin", () => {
       expect(result?.apiKey).toBe(OAUTH_DUMMY_KEY);
       expect(result?.fetch).toBeDefined();
     });
+
+    it("should add OAuth models to provider for OAuth auth", async () => {
+      const hooks = await QwenAuthPlugin(mockPluginInput);
+
+      const mockProvider = {
+        models: {
+          "qwen-turbo": { cost: { input: 1, output: 2 } },
+        } as Record<string, any>,
+      };
+      const mockAuth = {
+        type: "oauth" as const,
+        access: "test-access-token",
+        expires: Date.now() + 3600000,
+        refresh: "test-refresh-token",
+      };
+      const getAuth = mock(() => Promise.resolve(mockAuth));
+
+      await hooks.auth?.loader?.(getAuth, mockProvider);
+
+      // OAuth models should be added to the provider
+      expect(mockProvider.models["coder-model"]).toBeDefined();
+      expect(mockProvider.models["vision-model"]).toBeDefined();
+
+      // Check OAuth model properties
+      expect(mockProvider.models["coder-model"].id).toBe("coder-model");
+      expect(mockProvider.models["coder-model"].cost.input).toBe(0);
+      expect(mockProvider.models["coder-model"].cost.output).toBe(0);
+
+      expect(mockProvider.models["vision-model"].id).toBe("vision-model");
+      expect(mockProvider.models["vision-model"].attachment).toBe(true); // Vision model supports attachments
+
+      // Existing models should be preserved
+      expect(mockProvider.models["qwen-turbo"]).toBeDefined();
+    });
+
+    it("should NOT add OAuth models for API key auth", async () => {
+      const hooks = await QwenAuthPlugin(mockPluginInput);
+
+      const mockProvider = {
+        models: {
+          "qwen-turbo": { cost: { input: 1, output: 2 } },
+        } as Record<string, any>,
+      };
+      const mockAuth = { type: "api" as const };
+      const getAuth = mock(() => Promise.resolve(mockAuth));
+
+      await hooks.auth?.loader?.(getAuth, mockProvider);
+
+      // OAuth models should NOT be added for API key auth
+      expect(mockProvider.models["coder-model"]).toBeUndefined();
+      expect(mockProvider.models["vision-model"]).toBeUndefined();
+
+      // Existing models should still be there
+      expect(mockProvider.models["qwen-turbo"]).toBeDefined();
+    });
   });
 });
 
