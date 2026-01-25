@@ -246,37 +246,55 @@ describe("Root index.ts exports - OpenCode compatibility", () => {
     expect(rootModule.default).toBe(rootModule.QwenAuthPlugin);
   });
 
-  it("should export credential storage functions", async () => {
+  it("should ONLY export QwenAuthPlugin and default (nothing else)", async () => {
     const rootModule = await import("../index");
+    const exportedKeys = Object.keys(rootModule);
 
-    expect(typeof rootModule.loadCredentials).toBe("function");
-    expect(typeof rootModule.saveCredentials).toBe("function");
-    expect(typeof rootModule.clearCredentials).toBe("function");
-    expect(typeof rootModule.getCredentialsPath).toBe("function");
+    // Only QwenAuthPlugin and default should be exported
+    // All other functions must be imported from sub-modules to avoid
+    // OpenCode calling them without proper arguments
+    expect(exportedKeys.sort()).toEqual(["QwenAuthPlugin", "default"]);
   });
 
-  it("should export auth helper functions", async () => {
+  it("should NOT export credential storage functions (use sub-modules)", async () => {
     const rootModule = await import("../index");
 
-    expect(typeof rootModule.isOAuthAuth).toBe("function");
-    expect(typeof rootModule.isApiAuth).toBe("function");
-    expect(typeof rootModule.accessTokenExpired).toBe("function");
-    expect(typeof rootModule.tokenNeedsRefresh).toBe("function");
-    expect(typeof rootModule.calculateExpiresAt).toBe("function");
+    // These should NOT be exported because OpenCode calls all exports as functions
+    // Import from sub-modules: import { loadCredentials } from "qwen-auth/src/plugin"
+    expect(rootModule).not.toHaveProperty("loadCredentials");
+    expect(rootModule).not.toHaveProperty("saveCredentials");
+    expect(rootModule).not.toHaveProperty("clearCredentials");
+    expect(rootModule).not.toHaveProperty("getCredentialsPath");
   });
 
-  it("should export OAuth flow functions (but NOT the class)", async () => {
+  it("should NOT export auth helper functions (use sub-modules)", async () => {
     const rootModule = await import("../index");
 
-    // QwenOAuthDeviceFlow class is NOT exported from root to avoid OpenCode calling it as a function
-    // Import it directly from sub-module if needed: import { QwenOAuthDeviceFlow } from "qwen-auth/src/qwen-oauth"
+    // These should NOT be exported because they throw errors when called without args
+    // Import from sub-modules: import { isOAuthAuth } from "qwen-auth/src/plugin"
+    expect(rootModule).not.toHaveProperty("isOAuthAuth");
+    expect(rootModule).not.toHaveProperty("isApiAuth");
+    expect(rootModule).not.toHaveProperty("accessTokenExpired");
+    expect(rootModule).not.toHaveProperty("tokenNeedsRefresh");
+    expect(rootModule).not.toHaveProperty("calculateExpiresAt");
+  });
+
+  it("should NOT export OAuth flow functions (use sub-modules)", async () => {
+    const rootModule = await import("../index");
+
+    // Neither classes nor functions should be exported from root
+    // All cause errors when OpenCode calls them without proper arguments:
+    // - Classes: "Cannot call a class constructor without |new|"
+    // - Functions with required args: "The 'data' argument must be of type string..."
+    // Import from sub-modules if needed:
+    // - import { QwenOAuthDeviceFlow, generateCodeVerifier } from "qwen-auth/src/qwen-oauth"
     expect(rootModule).not.toHaveProperty("QwenOAuthDeviceFlow");
-    expect(typeof rootModule.generateCodeVerifier).toBe("function");
-    expect(typeof rootModule.generateCodeChallenge).toBe("function");
-    expect(typeof rootModule.generatePKCEPair).toBe("function");
-    expect(typeof rootModule.requestDeviceAuthorization).toBe("function");
-    expect(typeof rootModule.pollDeviceToken).toBe("function");
-    expect(typeof rootModule.refreshAccessToken).toBe("function");
+    expect(rootModule).not.toHaveProperty("generateCodeVerifier");
+    expect(rootModule).not.toHaveProperty("generateCodeChallenge");
+    expect(rootModule).not.toHaveProperty("generatePKCEPair");
+    expect(rootModule).not.toHaveProperty("requestDeviceAuthorization");
+    expect(rootModule).not.toHaveProperty("pollDeviceToken");
+    expect(rootModule).not.toHaveProperty("refreshAccessToken");
   });
 
   it("should NOT export numeric constants that would cause OpenCode errors", async () => {
