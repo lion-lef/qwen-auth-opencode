@@ -62,15 +62,6 @@ export {
   applyQwenHeaders,
 } from "./headers";
 
-// Server exports (OAuth callback server)
-export {
-  startOAuthListener,
-  OAUTH_CALLBACK_PORT,
-  OAUTH_CALLBACK_PATH,
-  OAUTH_REDIRECT_URI,
-} from "./server";
-export type { OAuthListener, OAuthListenerOptions } from "./server";
-
 // Debug exports
 export {
   isDebugEnabled,

@@ -4,8 +4,7 @@
  *
  * Provides:
  * - Qwen OAuth Device Flow (compatible with chat.qwen.ai)
- * - Local callback server for automatic OAuth redirect capture
- * - Headless environment support with manual code entry fallback
+ * - Headless environment support with appropriate instructions
  * - API Key authentication (for DashScope API)
  * - Request interception for authentication header injection
  * - Debug logging support (set QWEN_AUTH_DEBUG=1 to enable)
@@ -19,7 +18,6 @@ import {
   type GetAuth,
   type Provider,
   type AuthOAuthResult,
-  type OAuthListener,
   isOAuthAuth,
   saveCredentials,
   createOAuthFetch,
@@ -27,7 +25,6 @@ import {
   applyQwenHeaders,
   openBrowser,
   isHeadlessEnvironment,
-  startOAuthListener,
   logDebugMessage,
 } from "./plugin";
 
@@ -91,87 +88,22 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
               const isHeadless = isHeadlessEnvironment();
               logDebugMessage(`[Qwen Auth] Headless environment: ${isHeadless}`);
 
-              // Try to start local callback listener for non-headless environments
-              let listener: OAuthListener | null = null;
-              if (!isHeadless) {
-                try {
-                  listener = await startOAuthListener();
-                  logDebugMessage("[Qwen Auth] Local callback server started");
-                } catch (error) {
-                  if (error instanceof Error) {
-                    console.log(
-                      `Warning: Couldn't start the local callback listener (${error.message}). Using device code flow.`
-                    );
-                    logDebugMessage(`[Qwen Auth] Callback server failed: ${error.message}`);
-                  } else {
-                    console.log(
-                      "Warning: Couldn't start the local callback listener. Using device code flow."
-                    );
-                  }
-                }
-              } else {
-                console.log(
-                  "Headless environment detected. Using device code flow."
-                );
-              }
-
               // Open browser automatically (non-headless only)
               if (!isHeadless) {
                 openBrowser(authInfo.verificationUriComplete);
               }
 
-              // If we have a callback listener, use automatic capture (like Gemini plugin)
-              if (listener) {
-                return {
-                  url: authInfo.verificationUriComplete,
-                  instructions:
-                    "Complete the sign-in flow in your browser. We'll automatically detect when you're done.",
-                  method: "auto" as const,
-                  async callback() {
-                    try {
-                      // Wait for authorization via device flow polling
-                      // The callback server is mainly for UX, but Qwen uses device flow for token exchange
-                      const credentials = await flow.waitForAuthorization();
-
-                      // Save credentials locally
-                      await saveCredentials({
-                        type: "oauth",
-                        accessToken: credentials.accessToken,
-                        refreshToken: credentials.refreshToken,
-                        expiresAt: credentials.expiresAt,
-                      });
-
-                      logDebugMessage("[Qwen Auth] OAuth authorization successful");
-
-                      return {
-                        type: "success" as const,
-                        refresh: credentials.refreshToken || "",
-                        access: credentials.accessToken,
-                        expires: credentials.expiresAt,
-                      };
-                    } catch (error) {
-                      console.error("Qwen OAuth authorization failed:", error);
-                      logDebugMessage(`[Qwen Auth] OAuth authorization failed: ${error}`);
-                      return { type: "failed" as const };
-                    } finally {
-                      // Clean up listener
-                      try {
-                        await listener?.close();
-                      } catch {
-                        // Ignore cleanup errors
-                      }
-                    }
-                  },
-                };
-              }
-
-              // Fallback: device code flow with manual instructions (for headless or if listener failed)
+              // Qwen uses device code flow (RFC 8628) - no callback server needed
+              // Token exchange happens via polling, not OAuth redirect
               return {
                 url: authInfo.verificationUriComplete,
-                instructions: `Visit ${authInfo.verificationUri} and enter code: ${authInfo.userCode}\n\nOr open this URL directly: ${authInfo.verificationUriComplete}`,
+                instructions: isHeadless
+                  ? `Visit ${authInfo.verificationUri} and enter code: ${authInfo.userCode}\n\nOr open this URL directly: ${authInfo.verificationUriComplete}`
+                  : "Complete the sign-in flow in your browser. We'll automatically detect when you're done.",
                 method: "auto" as const,
                 async callback() {
                   try {
+                    // Poll for tokens using device code flow
                     const credentials = await flow.waitForAuthorization();
 
                     // Save credentials locally
@@ -182,7 +114,7 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
                       expiresAt: credentials.expiresAt,
                     });
 
-                    logDebugMessage("[Qwen Auth] OAuth authorization successful (device flow)");
+                    logDebugMessage("[Qwen Auth] OAuth authorization successful");
 
                     return {
                       type: "success" as const,
