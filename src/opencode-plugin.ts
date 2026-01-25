@@ -1,11 +1,14 @@
 /**
  * OpenCode Plugin Implementation for Qwen Authentication
- * Follows the OpenCode plugin architecture (similar to codex.ts and antigravity-auth)
+ * Follows the OpenCode plugin architecture (similar to codex.ts, antigravity-auth, and gemini-auth)
  *
  * Provides:
  * - Qwen OAuth Device Flow (compatible with chat.qwen.ai)
+ * - Local callback server for automatic OAuth redirect capture
+ * - Headless environment support with manual code entry fallback
  * - API Key authentication (for DashScope API)
  * - Request interception for authentication header injection
+ * - Debug logging support (set QWEN_AUTH_DEBUG=1 to enable)
  */
 
 import { QwenOAuthDeviceFlow } from "./qwen-oauth";
@@ -16,12 +19,16 @@ import {
   type GetAuth,
   type Provider,
   type AuthOAuthResult,
+  type OAuthListener,
   isOAuthAuth,
   saveCredentials,
   createOAuthFetch,
   OAUTH_DUMMY_KEY,
   applyQwenHeaders,
   openBrowser,
+  isHeadlessEnvironment,
+  startOAuthListener,
+  logDebugMessage,
 } from "./plugin";
 
 // Re-export for backward compatibility
@@ -80,12 +87,88 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
             try {
               const authInfo = await flow.startAuthorization();
 
-              // Open browser automatically
-              openBrowser(authInfo.verificationUriComplete);
+              // Check if running in headless environment
+              const isHeadless = isHeadlessEnvironment();
+              logDebugMessage(`[Qwen Auth] Headless environment: ${isHeadless}`);
 
+              // Try to start local callback listener for non-headless environments
+              let listener: OAuthListener | null = null;
+              if (!isHeadless) {
+                try {
+                  listener = await startOAuthListener();
+                  logDebugMessage("[Qwen Auth] Local callback server started");
+                } catch (error) {
+                  if (error instanceof Error) {
+                    console.log(
+                      `Warning: Couldn't start the local callback listener (${error.message}). Using device code flow.`
+                    );
+                    logDebugMessage(`[Qwen Auth] Callback server failed: ${error.message}`);
+                  } else {
+                    console.log(
+                      "Warning: Couldn't start the local callback listener. Using device code flow."
+                    );
+                  }
+                }
+              } else {
+                console.log(
+                  "Headless environment detected. Using device code flow."
+                );
+              }
+
+              // Open browser automatically (non-headless only)
+              if (!isHeadless) {
+                openBrowser(authInfo.verificationUriComplete);
+              }
+
+              // If we have a callback listener, use automatic capture (like Gemini plugin)
+              if (listener) {
+                return {
+                  url: authInfo.verificationUriComplete,
+                  instructions:
+                    "Complete the sign-in flow in your browser. We'll automatically detect when you're done.",
+                  method: "auto" as const,
+                  async callback() {
+                    try {
+                      // Wait for authorization via device flow polling
+                      // The callback server is mainly for UX, but Qwen uses device flow for token exchange
+                      const credentials = await flow.waitForAuthorization();
+
+                      // Save credentials locally
+                      await saveCredentials({
+                        type: "oauth",
+                        accessToken: credentials.accessToken,
+                        refreshToken: credentials.refreshToken,
+                        expiresAt: credentials.expiresAt,
+                      });
+
+                      logDebugMessage("[Qwen Auth] OAuth authorization successful");
+
+                      return {
+                        type: "success" as const,
+                        refresh: credentials.refreshToken || "",
+                        access: credentials.accessToken,
+                        expires: credentials.expiresAt,
+                      };
+                    } catch (error) {
+                      console.error("Qwen OAuth authorization failed:", error);
+                      logDebugMessage(`[Qwen Auth] OAuth authorization failed: ${error}`);
+                      return { type: "failed" as const };
+                    } finally {
+                      // Clean up listener
+                      try {
+                        await listener?.close();
+                      } catch {
+                        // Ignore cleanup errors
+                      }
+                    }
+                  },
+                };
+              }
+
+              // Fallback: device code flow with manual instructions (for headless or if listener failed)
               return {
                 url: authInfo.verificationUriComplete,
-                instructions: `Visit ${authInfo.verificationUri} and enter code: ${authInfo.userCode}\n\nOr click the link that opened in your browser.`,
+                instructions: `Visit ${authInfo.verificationUri} and enter code: ${authInfo.userCode}\n\nOr open this URL directly: ${authInfo.verificationUriComplete}`,
                 method: "auto" as const,
                 async callback() {
                   try {
@@ -99,6 +182,8 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
                       expiresAt: credentials.expiresAt,
                     });
 
+                    logDebugMessage("[Qwen Auth] OAuth authorization successful (device flow)");
+
                     return {
                       type: "success" as const,
                       refresh: credentials.refreshToken || "",
@@ -107,12 +192,14 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
                     };
                   } catch (error) {
                     console.error("Qwen OAuth authorization failed:", error);
+                    logDebugMessage(`[Qwen Auth] OAuth authorization failed: ${error}`);
                     return { type: "failed" as const };
                   }
                 },
               };
             } catch (error) {
               console.error("Failed to start Qwen OAuth flow:", error);
+              logDebugMessage(`[Qwen Auth] Failed to start OAuth flow: ${error}`);
               throw error;
             }
           },
@@ -172,6 +259,8 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
               type: "api_key",
               apiKey: apiKey,
             });
+
+            logDebugMessage("[Qwen Auth] API key authentication successful");
 
             return {
               type: "success" as const,
