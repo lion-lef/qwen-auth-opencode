@@ -2,29 +2,31 @@
  * Tests for OpenCode Plugin
  */
 
-import { describe, it, expect, vi } from "vitest";
-import {
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
+import { QWEN_PROVIDER_ID, QWEN_MODELS } from "../src/constants";
+
+// Mock fs/promises module
+mock.module("fs/promises", () => ({
+  readFile: mock(() => Promise.resolve("{}")),
+  writeFile: mock(() => Promise.resolve(undefined)),
+  mkdir: mock(() => Promise.resolve(undefined)),
+  unlink: mock(() => Promise.resolve(undefined)),
+}));
+
+// Import after mocking
+const {
   QwenAuthPlugin,
   loadCredentials,
   saveCredentials,
   clearCredentials,
   OAUTH_DUMMY_KEY,
-} from "../src/opencode-plugin";
-import { QWEN_PROVIDER_ID, QWEN_MODELS } from "../src/constants";
-
-// Mock fs/promises
-vi.mock("fs/promises", () => ({
-  readFile: vi.fn(),
-  writeFile: vi.fn(),
-  mkdir: vi.fn(),
-  unlink: vi.fn(),
-}));
+} = await import("../src/opencode-plugin");
 
 describe("OpenCode Plugin", () => {
   const mockPluginInput = {
     client: {
       auth: {
-        set: vi.fn().mockResolvedValue(undefined),
+        set: mock(() => Promise.resolve(undefined)),
       },
     },
     project: {},
@@ -38,7 +40,7 @@ describe("OpenCode Plugin", () => {
       const hooks = await QwenAuthPlugin(mockPluginInput);
 
       expect(hooks).toHaveProperty("auth");
-      expect(hooks).toHaveProperty("chat.headers");
+      expect(hooks["chat.headers"]).toBeDefined();
     });
 
     it("should have correct provider ID in auth hook", async () => {
@@ -148,7 +150,7 @@ describe("OpenCode Plugin", () => {
       };
 
       const mockAuth = { type: "api" as const };
-      const getAuth = vi.fn().mockResolvedValue(mockAuth);
+      const getAuth = mock(() => Promise.resolve(mockAuth));
 
       await hooks.auth?.loader?.(getAuth, mockProvider);
 
@@ -162,7 +164,7 @@ describe("OpenCode Plugin", () => {
 
       const mockProvider = { models: { "qwen-turbo": {} } };
       const mockAuth = { type: "api" as const };
-      const getAuth = vi.fn().mockResolvedValue(mockAuth);
+      const getAuth = mock(() => Promise.resolve(mockAuth));
 
       const result = await hooks.auth?.loader?.(getAuth, mockProvider);
 
@@ -179,7 +181,7 @@ describe("OpenCode Plugin", () => {
         expires: Date.now() + 3600000,
         refresh: "test-refresh-token",
       };
-      const getAuth = vi.fn().mockResolvedValue(mockAuth);
+      const getAuth = mock(() => Promise.resolve(mockAuth));
 
       const result = await hooks.auth?.loader?.(getAuth, mockProvider);
 

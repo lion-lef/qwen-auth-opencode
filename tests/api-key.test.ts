@@ -2,7 +2,7 @@
  * Tests for API Key authentication provider
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "bun:test";
 import { ApiKeyAuthProvider, validateApiKeyFormat, maskApiKey } from "../src/auth/api-key";
 import { AUTH_METHODS } from "../src/constants";
 

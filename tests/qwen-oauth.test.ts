@@ -2,7 +2,7 @@
  * Tests for Qwen OAuth Device Flow
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import {
   generateCodeVerifier,
   generateCodeChallenge,
@@ -123,7 +123,6 @@ describe("QwenOAuthDeviceFlow", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-    vi.restoreAllMocks();
   });
 
   describe("startAuthorization", () => {
@@ -137,10 +136,13 @@ describe("QwenOAuthDeviceFlow", () => {
         interval: 5,
       };
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      });
+      const mockFetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockResponse),
+        } as Response)
+      );
+      global.fetch = mockFetch;
 
       const flow = new QwenOAuthDeviceFlow();
       const result = await flow.startAuthorization();
@@ -150,7 +152,7 @@ describe("QwenOAuthDeviceFlow", () => {
       expect(result.verificationUriComplete).toBe("https://chat.qwen.ai/device?code=ABCD-1234");
       expect(result.expiresIn).toBe(600);
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(mockFetch).toHaveBeenCalledWith(
         QWEN_OAUTH_CONSTANTS.DEVICE_CODE_ENDPOINT,
         expect.objectContaining({
           method: "POST",
@@ -162,11 +164,13 @@ describe("QwenOAuthDeviceFlow", () => {
     });
 
     it("should throw error on failed request", async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        text: () => Promise.resolve("Bad Request"),
-      });
+      global.fetch = mock(() =>
+        Promise.resolve({
+          ok: false,
+          status: 400,
+          text: () => Promise.resolve("Bad Request"),
+        } as Response)
+      );
 
       const flow = new QwenOAuthDeviceFlow();
       await expect(flow.startAuthorization()).rejects.toThrow("Device authorization failed");
@@ -201,14 +205,15 @@ describe("QwenOAuthDeviceFlow", () => {
       };
 
       let callCount = 0;
-      global.fetch = vi.fn().mockImplementation((url: string) => {
+      global.fetch = mock((url: string | URL | Request) => {
         callCount++;
-        if (url.includes("device/code")) {
+        const urlStr = url.toString();
+        if (urlStr.includes("device/code")) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve(mockDeviceResponse),
-          });
-        } else if (url.includes("token")) {
+          } as Response);
+        } else if (urlStr.includes("token")) {
           // First token poll returns pending, second returns success
           if (callCount === 2) {
             return Promise.resolve({
@@ -216,12 +221,12 @@ describe("QwenOAuthDeviceFlow", () => {
               status: 400,
               text: () =>
                 Promise.resolve(JSON.stringify({ error: "authorization_pending" })),
-            });
+            } as Response);
           }
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve(mockTokenResponse),
-          });
+          } as Response);
         }
         return Promise.reject(new Error("Unknown URL"));
       });
@@ -247,19 +252,20 @@ describe("QwenOAuthDeviceFlow", () => {
         interval: 1,
       };
 
-      global.fetch = vi.fn().mockImplementation((url: string) => {
-        if (url.includes("device/code")) {
+      global.fetch = mock((url: string | URL | Request) => {
+        const urlStr = url.toString();
+        if (urlStr.includes("device/code")) {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve(mockDeviceResponse),
-          });
-        } else if (url.includes("token")) {
+          } as Response);
+        } else if (urlStr.includes("token")) {
           return Promise.resolve({
             ok: false,
             status: 400,
             text: () =>
               Promise.resolve(JSON.stringify({ error: "authorization_pending" })),
-          });
+          } as Response);
         }
         return Promise.reject(new Error("Unknown URL"));
       });
