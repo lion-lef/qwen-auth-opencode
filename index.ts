@@ -65,23 +65,12 @@ export {
   getDashScopeClient,
   QWEN_HEADERS,
   applyQwenHeaders,
-  // Server (OAuth callback listener)
-  startOAuthListener,
-  OAUTH_CALLBACK_PORT,
-  OAUTH_CALLBACK_PATH,
-  OAUTH_REDIRECT_URI,
   // Debug utilities
   isDebugEnabled,
   getDebugLogPath,
   startQwenDebugRequest,
   logQwenDebugResponse,
   logDebugMessage,
-} from "./src/plugin";
-
-// Server types
-export type {
-  OAuthListener,
-  OAuthListenerOptions,
 } from "./src/plugin";
 
 // Debug types
