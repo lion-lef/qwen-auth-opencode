@@ -4,7 +4,7 @@
  * This script tests the bundled one-file plugin by simulating
  * an OpenCode plugin environment.
  *
- * Usage: npx tsx examples/test-local-plugin.ts
+ * Usage: bun run examples/test-local-plugin.ts
  */
 
 import * as path from "node:path";
@@ -40,7 +40,7 @@ async function main() {
     await fs.access(PLUGIN_PATH);
   } catch {
     console.error("Error: Plugin file not found at", PLUGIN_PATH);
-    console.error("Run 'npm run build:plugin' first to generate the bundled plugin.");
+    console.error("Run 'bun run build:plugin' first to generate the bundled plugin.");
     process.exit(1);
   }
 

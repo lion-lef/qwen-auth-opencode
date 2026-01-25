@@ -15,9 +15,11 @@ Authentication plugin for [OpenCode](https://github.com/opencode-ai/opencode) th
 
 ## Installation
 
-### Option 1: npm Package
+### Option 1: Package Manager
 
 ```bash
+bun add qwen-auth
+# or
 npm install qwen-auth
 ```
 
@@ -31,8 +33,8 @@ git clone https://github.com/lion-lef/qwen-auth-opencode.git
 cd qwen-auth-opencode
 
 # Install dependencies and build
-npm install
-npm run build:plugin
+bun install
+bun run build:plugin
 
 # Copy to your OpenCode plugins directory
 cp dist/qwen-auth-plugin.js ~/.config/opencode/plugins/
@@ -190,33 +192,33 @@ This plugin is compatible with:
 
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Run tests
-npm test
+bun test
 
 # Build (TypeScript compilation)
-npm run build
+bun run build
 
 # Build one-file plugin
-npm run build:plugin
+bun run build:plugin
 
 # Build all (TypeScript + one-file plugin)
-npm run build:all
+bun run build:all
 
 # Type check
-npm run typecheck
+bun run typecheck
 
 # Test the bundled plugin locally
-npx tsx examples/test-local-plugin.ts
+bun run examples/test-local-plugin.ts
 ```
 
 ### Building the One-File Plugin
 
-The one-file plugin build uses [esbuild](https://esbuild.github.io/) to bundle all source files into a single JavaScript file that can be used directly with OpenCode:
+The one-file plugin build uses [Bun's bundler](https://bun.sh/docs/bundler) to bundle all source files into a single JavaScript file that can be used directly with OpenCode:
 
 ```bash
-npm run build:plugin
+bun run build:plugin
 ```
 
 This creates:

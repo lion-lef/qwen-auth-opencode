@@ -2,7 +2,7 @@
  * Tests for configuration module
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import {
   validateConfig,
   createDefaultApiKeyConfig,
@@ -91,15 +91,22 @@ describe("Configuration Schema", () => {
 });
 
 describe("Configuration Loader", () => {
-  const originalEnv = process.env;
+  const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    vi.resetModules();
-    process.env = { ...originalEnv };
+    // Clear relevant environment variables
+    delete process.env.QWEN_API_KEY;
+    delete process.env.DASHSCOPE_API_KEY;
+    delete process.env.QWEN_AUTH_DEBUG;
+    delete process.env.QWEN_USE_INTERNATIONAL;
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    // Restore original environment
+    process.env.QWEN_API_KEY = originalEnv.QWEN_API_KEY;
+    process.env.DASHSCOPE_API_KEY = originalEnv.DASHSCOPE_API_KEY;
+    process.env.QWEN_AUTH_DEBUG = originalEnv.QWEN_AUTH_DEBUG;
+    process.env.QWEN_USE_INTERNATIONAL = originalEnv.QWEN_USE_INTERNATIONAL;
   });
 
   describe("loadFromEnvironment", () => {
