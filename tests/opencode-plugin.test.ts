@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { QWEN_PROVIDER_ID, QWEN_MODELS } from "../src/constants";
+import { QWEN_PROVIDER_ID } from "../src/constants";
 
 // Mock fs/promises module
 mock.module("fs/promises", () => ({
@@ -137,15 +137,15 @@ describe("OpenCode Plugin", () => {
   });
 
   describe("auth.loader", () => {
-    it("should filter models to only Qwen models", async () => {
+    it("should not filter models (OpenCode manages model list)", async () => {
       const hooks = await QwenAuthPlugin(mockPluginInput);
 
       const mockProvider = {
         models: {
           "qwen-turbo": {},
           "qwen-plus": {},
-          "gpt-4": {}, // Should be filtered out
-          "claude-3": {}, // Should be filtered out
+          "coder-model": {}, // OAuth-specific model should NOT be filtered
+          "vision-model": {}, // OAuth-specific model should NOT be filtered
         },
       };
 
@@ -154,9 +154,12 @@ describe("OpenCode Plugin", () => {
 
       await hooks.auth?.loader?.(getAuth, mockProvider);
 
-      const qwenModelIds = Object.keys(QWEN_MODELS);
-      expect(mockProvider.models).not.toHaveProperty("gpt-4");
-      expect(mockProvider.models).not.toHaveProperty("claude-3");
+      // All models should remain - we don't filter anymore
+      // This allows OAuth-specific models from models.dev to work
+      expect(mockProvider.models).toHaveProperty("qwen-turbo");
+      expect(mockProvider.models).toHaveProperty("qwen-plus");
+      expect(mockProvider.models).toHaveProperty("coder-model");
+      expect(mockProvider.models).toHaveProperty("vision-model");
     });
 
     it("should return empty object for API key auth", async () => {

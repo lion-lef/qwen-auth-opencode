@@ -7,7 +7,7 @@
 
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import type { Plugin, PluginInput, Hooks, AuthHook } from "@opencode-ai/plugin";
-import { QWEN_PROVIDER_ID, QWEN_MODELS } from "../src/constants";
+import { QWEN_PROVIDER_ID } from "../src/constants";
 
 // Mock fs/promises before importing plugin
 mock.module("fs/promises", () => ({
@@ -268,7 +268,7 @@ describe("OpenCode SDK Integration", () => {
       expect(typeof result?.fetch).toBe("function");
     });
 
-    it("should filter non-Qwen models from provider", async () => {
+    it("should not filter models (OpenCode manages model list from models.dev)", async () => {
       const input = createMockPluginInput();
       const hooks = await QwenAuthPlugin(input);
 
@@ -277,17 +277,20 @@ describe("OpenCode SDK Integration", () => {
         models: {
           "qwen-turbo": {},
           "qwen-plus": {},
-          "gpt-4": {},
-          "claude-3": {},
+          "coder-model": {}, // OAuth-specific model
+          "vision-model": {}, // OAuth-specific model
         },
       };
       const getAuth = mock(() => Promise.resolve(mockAuth));
 
       await hooks.auth?.loader?.(getAuth, mockProvider);
 
-      // Check that non-Qwen models are removed
-      expect(mockProvider.models).not.toHaveProperty("gpt-4");
-      expect(mockProvider.models).not.toHaveProperty("claude-3");
+      // All models should remain - we don't filter anymore
+      // This allows OAuth-specific models from models.dev to work
+      expect(mockProvider.models).toHaveProperty("qwen-turbo");
+      expect(mockProvider.models).toHaveProperty("qwen-plus");
+      expect(mockProvider.models).toHaveProperty("coder-model");
+      expect(mockProvider.models).toHaveProperty("vision-model");
     });
   });
 

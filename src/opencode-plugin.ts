@@ -11,7 +11,7 @@
  */
 
 import { QwenOAuthDeviceFlow } from "./qwen-oauth";
-import { QWEN_PROVIDER_ID, QWEN_MODELS } from "./constants";
+import { QWEN_PROVIDER_ID } from "./constants";
 import {
   type PluginContext,
   type Hooks,
@@ -44,19 +44,13 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
       /**
        * Loader function called when authentication is needed
        * Handles token refresh and request interception
+       *
+       * Note: We don't filter models here - OpenCode manages the model list
+       * based on models.dev configuration. This allows OAuth-specific models
+       * (like coder-model, vision-model) to work alongside DashScope models.
        */
-      async loader(getAuth: GetAuth, provider: Provider) {
+      async loader(getAuth: GetAuth, _provider: Provider) {
         const auth = await getAuth();
-
-        // Filter models to only include Qwen models
-        const qwenModelIds = Object.keys(QWEN_MODELS);
-        if (provider.models) {
-          for (const modelId of Object.keys(provider.models)) {
-            if (!qwenModelIds.includes(modelId)) {
-              delete provider.models[modelId];
-            }
-          }
-        }
 
         // If using API key authentication, no special handling needed
         if (!isOAuthAuth(auth)) {
