@@ -5,6 +5,15 @@
  * This file enables OpenCode to load this plugin directly from
  * the cloned repository directory using Bun's TypeScript support.
  *
+ * IMPORTANT: This file ONLY exports functions and types.
+ * OpenCode iterates through all exports and calls them as functions.
+ * Exporting non-function values (numbers, strings, objects) causes errors like:
+ * "fn3 is not a function. (In 'fn3(input)', 'fn3' is 300000)"
+ *
+ * For constants, use the sub-module imports:
+ * - import { ACCESS_TOKEN_EXPIRY_BUFFER_MS } from "qwen-auth/src/plugin/auth"
+ * - import { QWEN_PROVIDER_ID, QWEN_MODELS } from "qwen-auth/src/constants"
+ *
  * @example
  * ```typescript
  * // For OpenCode plugin registration (recommended)
@@ -18,19 +27,20 @@
  * ```
  */
 
-// Main plugin export
+// Main plugin export - the primary function OpenCode will call
 export { QwenAuthPlugin, default } from "./src/opencode-plugin";
+
+// Credential storage functions
 export {
   loadCredentials,
   saveCredentials,
   clearCredentials,
-  OAUTH_DUMMY_KEY,
   getCredentialsPath,
 } from "./src/opencode-plugin";
 
-// Plugin module exports
+// Plugin module exports - ONLY functions and types
 export {
-  // Type exports
+  // Type exports (erased at runtime, safe to export)
   type AuthDetails,
   type OAuthAuthDetails,
   type ApiKeyAuthDetails,
@@ -48,22 +58,20 @@ export {
   type AuthHook,
   type Hooks,
   type StoredCredentials,
-  // Auth helpers
+  // Auth helper functions
   isOAuthAuth,
   isApiAuth,
   accessTokenExpired,
   tokenNeedsRefresh,
   calculateExpiresAt,
-  ACCESS_TOKEN_EXPIRY_BUFFER_MS,
-  // Browser helpers
+  // Browser helper functions
   openBrowser,
   isHeadlessEnvironment,
-  // Fetch wrapper
+  // Fetch wrapper function
   createOAuthFetch,
-  // Headers
+  // Header functions
   getUserAgent,
   getDashScopeClient,
-  QWEN_HEADERS,
   applyQwenHeaders,
   // Debug utilities
   isDebugEnabled,
@@ -80,7 +88,7 @@ export type {
   QwenDebugResponseMeta,
 } from "./src/plugin";
 
-// Qwen OAuth Device Flow
+// Qwen OAuth Device Flow - ONLY functions, class, and types
 export {
   QwenOAuthDeviceFlow,
   generateCodeVerifier,
@@ -89,7 +97,6 @@ export {
   requestDeviceAuthorization,
   pollDeviceToken,
   refreshAccessToken,
-  QWEN_OAUTH_CONSTANTS,
 } from "./src/qwen-oauth";
 export type {
   QwenCredentials,
@@ -97,16 +104,15 @@ export type {
   DeviceAuthorizationResponse,
 } from "./src/qwen-oauth";
 
-// Configuration exports
+// Configuration exports - ONLY functions and types
 export {
   loadConfig,
   validateConfig,
   createDefaultApiKeyConfig,
-  QwenAuthConfigSchema,
 } from "./src/config";
 export type { QwenAuthConfig, ApiKeyConfig } from "./src/config";
 
-// Authentication exports
+// Authentication exports - ONLY functions and types
 export {
   ApiKeyAuthProvider,
   validateApiKeyFormat,
@@ -119,17 +125,9 @@ export type {
   ApiRequestConfig,
 } from "./src/auth";
 
-// Utility exports
+// Utility exports - ONLY functions and types
 export { createLogger, getLogger } from "./src/utils";
 export type { LogLevel } from "./src/utils";
 
-// Constants exports
-export {
-  QWEN_PROVIDER_ID,
-  QWEN_API_ENDPOINTS,
-  QWEN_MODELS,
-  AUTH_METHODS,
-  TOKEN_SETTINGS,
-  QWEN_OAUTH_CONFIG,
-} from "./src/constants";
+// Type exports from constants (types are safe, erased at runtime)
 export type { QwenModelId, AuthMethod as AuthMethodType } from "./src/constants";
