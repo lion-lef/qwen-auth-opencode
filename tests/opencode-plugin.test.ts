@@ -192,7 +192,7 @@ describe("OpenCode Plugin", () => {
 });
 
 describe("Credential Storage", () => {
-  it("should export OAUTH_DUMMY_KEY constant", () => {
+  it("should export OAUTH_DUMMY_KEY constant from opencode-plugin module", () => {
     expect(OAUTH_DUMMY_KEY).toBe("sk-oauth-qwen-auth");
   });
 
@@ -206,5 +206,99 @@ describe("Credential Storage", () => {
 
   it("should export clearCredentials function", () => {
     expect(typeof clearCredentials).toBe("function");
+  });
+});
+
+describe("Root index.ts exports - OpenCode compatibility", () => {
+  /**
+   * This test verifies that the root index.ts only exports functions and classes.
+   * OpenCode iterates through all module exports and calls them as functions.
+   * Exporting non-function values (numbers, strings, objects) causes runtime errors:
+   * "fn3 is not a function. (In 'fn3(input)', 'fn3' is 300000)"
+   *
+   * The value 300000 was ACCESS_TOKEN_EXPIRY_BUFFER_MS (5 minutes in ms).
+   * Fixes: https://github.com/lion-lef/qwen-auth-opencode/issues/9
+   */
+  it("should only export functions and classes from root index.ts (not constants)", async () => {
+    const rootModule = await import("../index");
+
+    const nonFunctionExports: string[] = [];
+
+    for (const [key, value] of Object.entries(rootModule)) {
+      // Skip 'default' export (it's the QwenAuthPlugin function)
+      if (key === "default") continue;
+
+      // Check if export is NOT a function or class
+      if (typeof value !== "function") {
+        nonFunctionExports.push(`${key}: ${typeof value} (value: ${JSON.stringify(value)})`);
+      }
+    }
+
+    // This test should pass - no non-function exports
+    expect(nonFunctionExports).toEqual([]);
+  });
+
+  it("should export QwenAuthPlugin as default and named export", async () => {
+    const rootModule = await import("../index");
+
+    expect(typeof rootModule.default).toBe("function");
+    expect(typeof rootModule.QwenAuthPlugin).toBe("function");
+    expect(rootModule.default).toBe(rootModule.QwenAuthPlugin);
+  });
+
+  it("should export credential storage functions", async () => {
+    const rootModule = await import("../index");
+
+    expect(typeof rootModule.loadCredentials).toBe("function");
+    expect(typeof rootModule.saveCredentials).toBe("function");
+    expect(typeof rootModule.clearCredentials).toBe("function");
+    expect(typeof rootModule.getCredentialsPath).toBe("function");
+  });
+
+  it("should export auth helper functions", async () => {
+    const rootModule = await import("../index");
+
+    expect(typeof rootModule.isOAuthAuth).toBe("function");
+    expect(typeof rootModule.isApiAuth).toBe("function");
+    expect(typeof rootModule.accessTokenExpired).toBe("function");
+    expect(typeof rootModule.tokenNeedsRefresh).toBe("function");
+    expect(typeof rootModule.calculateExpiresAt).toBe("function");
+  });
+
+  it("should export OAuth flow functions and class", async () => {
+    const rootModule = await import("../index");
+
+    expect(typeof rootModule.QwenOAuthDeviceFlow).toBe("function"); // Class
+    expect(typeof rootModule.generateCodeVerifier).toBe("function");
+    expect(typeof rootModule.generateCodeChallenge).toBe("function");
+    expect(typeof rootModule.generatePKCEPair).toBe("function");
+    expect(typeof rootModule.requestDeviceAuthorization).toBe("function");
+    expect(typeof rootModule.pollDeviceToken).toBe("function");
+    expect(typeof rootModule.refreshAccessToken).toBe("function");
+  });
+
+  it("should NOT export numeric constants that would cause OpenCode errors", async () => {
+    const rootModule = await import("../index");
+
+    // These constants should NOT be exported from root index.ts
+    // They can be imported from sub-modules if needed
+    expect(rootModule).not.toHaveProperty("ACCESS_TOKEN_EXPIRY_BUFFER_MS");
+    expect(rootModule).not.toHaveProperty("QWEN_OAUTH_PORT");
+  });
+
+  it("should NOT export object constants that would cause OpenCode errors", async () => {
+    const rootModule = await import("../index");
+
+    // These object constants should NOT be exported from root index.ts
+    expect(rootModule).not.toHaveProperty("QWEN_PROVIDER_ID");
+    expect(rootModule).not.toHaveProperty("QWEN_MODELS");
+    expect(rootModule).not.toHaveProperty("QWEN_API_ENDPOINTS");
+    expect(rootModule).not.toHaveProperty("AUTH_METHODS");
+    expect(rootModule).not.toHaveProperty("TOKEN_SETTINGS");
+    expect(rootModule).not.toHaveProperty("QWEN_OAUTH_CONFIG");
+    expect(rootModule).not.toHaveProperty("QWEN_OAUTH_CONSTANTS");
+    expect(rootModule).not.toHaveProperty("QWEN_HEADERS");
+    expect(rootModule).not.toHaveProperty("OAUTH_DUMMY_KEY");
+    expect(rootModule).not.toHaveProperty("QwenAuthConfigSchema");
   });
 });
