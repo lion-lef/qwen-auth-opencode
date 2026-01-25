@@ -12,17 +12,20 @@
  * 3. OpenCode/Bun will load index.ts directly without build step
  */
 
-// Import directly from root index.ts (simulates how OpenCode loads the plugin)
+// Import functions and types from root index.ts (simulates how OpenCode loads the plugin)
+// NOTE: Constants like QWEN_PROVIDER_ID and QWEN_MODELS are NOT exported from root index.ts
+// because OpenCode calls all exports as functions, which fails for non-function values.
 import {
   QwenAuthPlugin,
   QwenOAuthDeviceFlow,
-  QWEN_PROVIDER_ID,
-  QWEN_MODELS,
   isOAuthAuth,
   isApiAuth,
   loadConfig,
   type Hooks,
 } from "../index";
+
+// Import constants directly from their source modules (not from root index.ts)
+import { QWEN_PROVIDER_ID, QWEN_MODELS } from "../src/constants";
 
 // Mock OpenCode plugin input
 const mockPluginInput = {
