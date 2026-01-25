@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Type check
+        run: bun run typecheck
+
+      - name: Run tests
+        run: bun test
+
+      - name: Build plugin
+        run: bun run build:plugin
+
+      - name: Test plugin loading
+        run: bun run examples/opencode-integration-example.ts
+
+  # Verify that only functions are exported from root module
+  # This prevents "fn3 is not a function" errors in OpenCode
+  verify-exports:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Verify root exports are functions only
+        run: |
+          bun -e "
+            import * as exports from './index.ts';
+
+            const forbidden = [];
+            for (const [name, value] of Object.entries(exports)) {
+              if (typeof value !== 'function' && typeof value !== 'undefined') {
+                forbidden.push({ name, type: typeof value, value: String(value).slice(0, 50) });
+              }
+            }
+
+            if (forbidden.length > 0) {
+              console.error('ERROR: Root index.ts exports non-function values!');
+              console.error('OpenCode calls all exports as functions, causing errors like:');
+              console.error('  fn3 is not a function. (In fn3(input), fn3 is VALUE)');
+              console.error('');
+              console.error('Non-function exports found:');
+              for (const f of forbidden) {
+                console.error('  - ' + f.name + ': ' + f.type + ' = ' + f.value);
+              }
+              console.error('');
+              console.error('Move these exports to sub-modules instead.');
+              process.exit(1);
+            }
+
+            console.log('✅ All root exports are functions (safe for OpenCode)');
+            console.log('   Total exports:', Object.keys(exports).length);
+          "

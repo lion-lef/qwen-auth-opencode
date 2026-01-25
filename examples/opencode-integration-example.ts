@@ -10,7 +10,8 @@
  *   bun run examples/opencode-integration-example.ts
  */
 
-import { QwenAuthPlugin, QWEN_PROVIDER_ID, QWEN_MODELS } from "../index";
+import { QwenAuthPlugin } from "../index";
+import { QWEN_PROVIDER_ID, QWEN_MODELS } from "../src/constants";
 import type { PluginInput, Hooks } from "@opencode-ai/plugin";
 
 console.log("=== OpenCode Plugin Integration Test ===\n");
@@ -119,22 +120,38 @@ async function runTest() {
     console.log();
 
     console.log("7. Testing exports from index.ts...");
+    // Note: Constants are NOT exported from root index.ts to avoid OpenCode errors
+    // OpenCode calls all exports as functions, so only functions/types are exported
     const expectedExports = [
       "QwenAuthPlugin",
       "default",
       "loadCredentials",
       "saveCredentials",
       "clearCredentials",
-      "OAUTH_DUMMY_KEY",
-      "QWEN_PROVIDER_ID",
-      "QWEN_MODELS",
-      "QWEN_API_ENDPOINTS",
+      "getCredentialsPath",
+      "isOAuthAuth",
+      "isApiAuth",
+      "accessTokenExpired",
     ];
 
     const indexModule = await import("../index");
     for (const exp of expectedExports) {
       const exists = exp in indexModule;
       console.log(`   - ${exp}: ${exists ? "✅" : "❌"}`);
+    }
+
+    // Verify constants are NOT in root exports (they should be imported from sub-modules)
+    console.log();
+    console.log("8. Verifying constants are NOT in root exports (avoids OpenCode errors)...");
+    const constantsThatShouldNotExist = [
+      "OAUTH_DUMMY_KEY",
+      "ACCESS_TOKEN_EXPIRY_BUFFER_MS",
+      "QWEN_PROVIDER_ID",
+      "QWEN_MODELS",
+    ];
+    for (const constant of constantsThatShouldNotExist) {
+      const exists = constant in indexModule;
+      console.log(`   - ${constant}: ${exists ? "❌ (should not exist)" : "✅ (correctly not exported)"}`);
     }
     console.log();
 
