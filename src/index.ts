@@ -3,18 +3,22 @@
  *
  * This plugin provides authentication support for Qwen models through
  * the OpenCode platform. It supports multiple authentication methods:
- * - API Key authentication (simplest)
+ * - Qwen OAuth Device Flow (recommended, compatible with chat.qwen.ai)
+ * - API Key authentication (for DashScope API)
  * - JWT authentication (for service-to-service)
- * - OAuth 2.0 authentication (for user authorization)
  *
  * @example
  * ```typescript
+ * // For OpenCode integration (recommended)
+ * import { QwenAuthPlugin } from 'qwen-auth';
+ *
+ * // Register the plugin with OpenCode
+ * const hooks = await QwenAuthPlugin(pluginInput);
+ *
+ * // For standalone usage
  * import { load, AuthManager } from 'qwen-auth';
  *
- * // Initialize the plugin
  * const result = await load({ workingDir: process.cwd() });
- *
- * // Use the authentication headers
  * const response = await fetch(`${result.baseUrl}/chat/completions`, {
  *   headers: result.headers,
  *   body: JSON.stringify({ model: 'qwen-turbo', messages: [...] }),
@@ -22,7 +26,36 @@
  * ```
  */
 
-// Main plugin exports
+// OpenCode Plugin (recommended)
+export { QwenAuthPlugin, default as QwenPlugin } from "./opencode-plugin";
+export {
+  loadCredentials as loadPluginCredentials,
+  saveCredentials as savePluginCredentials,
+  clearCredentials as clearPluginCredentials,
+  OAUTH_DUMMY_KEY,
+} from "./opencode-plugin";
+
+// Qwen OAuth Device Flow
+export {
+  QwenOAuthDeviceFlow,
+  generateCodeVerifier,
+  generateCodeChallenge,
+  generatePKCEPair,
+  requestDeviceAuthorization,
+  pollDeviceToken,
+  refreshAccessToken,
+  openBrowser,
+  QWEN_OAUTH_CONSTANTS,
+  QWEN_OAUTH_PORT,
+  QWEN_OAUTH_REDIRECT_PATH,
+} from "./qwen-oauth";
+export type {
+  QwenCredentials,
+  QwenTokenResponse,
+  DeviceAuthorizationResponse,
+} from "./qwen-oauth";
+
+// Legacy plugin exports (for backward compatibility)
 export { load, unload, initPlugin, getAuthManager, AuthManager } from "./plugin";
 export type { PluginContext, PluginResult } from "./plugin";
 
@@ -98,5 +131,6 @@ export {
   AUTH_METHODS,
   TOKEN_SETTINGS,
   RATE_LIMIT_CONFIG,
+  QWEN_OAUTH_CONFIG,
 } from "./constants";
 export type { QwenModelId, AuthMethod } from "./constants";

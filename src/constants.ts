@@ -13,12 +13,32 @@ export const QWEN_API_ENDPOINTS = {
   international: "https://dashscope-intl.aliyuncs.com/api/v1",
 } as const;
 
-/** OAuth configuration for Alibaba Cloud */
+/** OAuth configuration for Alibaba Cloud (legacy) */
 export const OAUTH_CONFIG = {
   authorizationEndpoint: "https://account.aliyun.com/oauth/authorize",
   tokenEndpoint: "https://oauth.aliyun.com/v1/token",
   scope: "openid profile",
   clientId: "", // To be configured by user
+} as const;
+
+/** Qwen OAuth configuration (chat.qwen.ai - Device Flow) */
+export const QWEN_OAUTH_CONFIG = {
+  /** Base URL for Qwen OAuth */
+  baseUrl: "https://chat.qwen.ai",
+  /** Device code endpoint */
+  deviceCodeEndpoint: "https://chat.qwen.ai/api/v1/oauth2/device/code",
+  /** Token endpoint */
+  tokenEndpoint: "https://chat.qwen.ai/api/v1/oauth2/token",
+  /** Public client ID for Qwen OAuth */
+  clientId: "f0304373b74a44d2b584a3fb70ca9e56",
+  /** OAuth scopes */
+  scope: "openid profile email model.completion",
+  /** Device code grant type */
+  grantType: "urn:ietf:params:oauth:grant-type:device_code",
+  /** Local callback port (for compatibility) */
+  callbackPort: 7777,
+  /** Callback path */
+  callbackPath: "/oauth/callback",
 } as const;
 
 /** Supported authentication methods */
