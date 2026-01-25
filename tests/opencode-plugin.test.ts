@@ -265,10 +265,12 @@ describe("Root index.ts exports - OpenCode compatibility", () => {
     expect(typeof rootModule.calculateExpiresAt).toBe("function");
   });
 
-  it("should export OAuth flow functions and class", async () => {
+  it("should export OAuth flow functions (but NOT the class)", async () => {
     const rootModule = await import("../index");
 
-    expect(typeof rootModule.QwenOAuthDeviceFlow).toBe("function"); // Class
+    // QwenOAuthDeviceFlow class is NOT exported from root to avoid OpenCode calling it as a function
+    // Import it directly from sub-module if needed: import { QwenOAuthDeviceFlow } from "qwen-auth/src/qwen-oauth"
+    expect(rootModule).not.toHaveProperty("QwenOAuthDeviceFlow");
     expect(typeof rootModule.generateCodeVerifier).toBe("function");
     expect(typeof rootModule.generateCodeChallenge).toBe("function");
     expect(typeof rootModule.generatePKCEPair).toBe("function");
@@ -300,5 +302,18 @@ describe("Root index.ts exports - OpenCode compatibility", () => {
     expect(rootModule).not.toHaveProperty("QWEN_HEADERS");
     expect(rootModule).not.toHaveProperty("OAUTH_DUMMY_KEY");
     expect(rootModule).not.toHaveProperty("QwenAuthConfigSchema");
+  });
+
+  it("should NOT export classes that would cause OpenCode errors", async () => {
+    const rootModule = await import("../index");
+
+    // Classes should NOT be exported from root index.ts because OpenCode
+    // iterates through exports and calls them as functions without 'new' keyword.
+    // This causes "Cannot call a class constructor without |new|" errors.
+    // Import classes directly from sub-modules if needed:
+    // - import { ApiKeyAuthProvider } from "qwen-auth/src/auth"
+    // - import { QwenOAuthDeviceFlow } from "qwen-auth/src/qwen-oauth"
+    expect(rootModule).not.toHaveProperty("ApiKeyAuthProvider");
+    expect(rootModule).not.toHaveProperty("QwenOAuthDeviceFlow");
   });
 });

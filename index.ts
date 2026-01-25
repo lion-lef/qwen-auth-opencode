@@ -88,9 +88,10 @@ export type {
   QwenDebugResponseMeta,
 } from "./src/plugin";
 
-// Qwen OAuth Device Flow - ONLY functions, class, and types
+// Qwen OAuth Device Flow - ONLY functions and types
+// NOTE: QwenOAuthDeviceFlow class is NOT exported here because OpenCode calls all exports as functions.
+// Import the class directly from the sub-module if needed: import { QwenOAuthDeviceFlow } from "qwen-auth/src/qwen-oauth"
 export {
-  QwenOAuthDeviceFlow,
   generateCodeVerifier,
   generateCodeChallenge,
   generatePKCEPair,
@@ -113,8 +114,9 @@ export {
 export type { QwenAuthConfig, ApiKeyConfig } from "./src/config";
 
 // Authentication exports - ONLY functions and types
+// NOTE: ApiKeyAuthProvider class is NOT exported here because OpenCode calls all exports as functions.
+// Import the class directly from the sub-module if needed: import { ApiKeyAuthProvider } from "qwen-auth/src/auth"
 export {
-  ApiKeyAuthProvider,
   validateApiKeyFormat,
   maskApiKey,
 } from "./src/auth";
