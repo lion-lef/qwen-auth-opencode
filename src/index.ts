@@ -26,7 +26,47 @@ export {
   saveCredentials,
   clearCredentials,
   OAUTH_DUMMY_KEY,
+  getCredentialsPath,
 } from "./opencode-plugin";
+
+// Plugin module exports (new modular structure)
+export {
+  // Type exports
+  type AuthDetails,
+  type OAuthAuthDetails,
+  type ApiKeyAuthDetails,
+  type GetAuth,
+  type Provider,
+  type ProviderModel,
+  type LoaderResult,
+  type PluginClient,
+  type PluginContext,
+  type PluginResult,
+  type AuthOAuthResult,
+  type AuthApiResult,
+  type AuthPrompt,
+  type AuthMethod,
+  type AuthHook,
+  type Hooks,
+  type StoredCredentials,
+  // Auth helpers
+  isOAuthAuth,
+  isApiAuth,
+  accessTokenExpired,
+  tokenNeedsRefresh,
+  calculateExpiresAt,
+  ACCESS_TOKEN_EXPIRY_BUFFER_MS,
+  // Browser helpers
+  openBrowser,
+  isHeadlessEnvironment,
+  // Fetch wrapper
+  createOAuthFetch,
+  // Headers
+  getUserAgent,
+  getDashScopeClient,
+  QWEN_HEADERS,
+  applyQwenHeaders,
+} from "./plugin";
 
 // Qwen OAuth Device Flow
 export {
@@ -37,7 +77,6 @@ export {
   requestDeviceAuthorization,
   pollDeviceToken,
   refreshAccessToken,
-  openBrowser,
   QWEN_OAUTH_CONSTANTS,
 } from "./qwen-oauth";
 export type {
@@ -53,10 +92,7 @@ export {
   createDefaultApiKeyConfig,
   QwenAuthConfigSchema,
 } from "./config";
-export type {
-  QwenAuthConfig,
-  ApiKeyConfig,
-} from "./config";
+export type { QwenAuthConfig, ApiKeyConfig } from "./config";
 
 // Authentication exports
 export {
@@ -84,4 +120,4 @@ export {
   TOKEN_SETTINGS,
   QWEN_OAUTH_CONFIG,
 } from "./constants";
-export type { QwenModelId, AuthMethod } from "./constants";
+export type { QwenModelId, AuthMethod as AuthMethodType } from "./constants";
