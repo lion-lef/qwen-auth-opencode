@@ -1,7 +1,8 @@
 {
   "name": "qwen-auth",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Authentication plugin for OpenCode that supports Qwen models with OAuth, JWT, and API key authentication",
+  "module": "index.ts",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
@@ -30,6 +31,8 @@
     "node": ">=20.0.0"
   },
   "files": [
+    "index.ts",
+    "src",
     "dist/",
     "README.md",
     "LICENSE"

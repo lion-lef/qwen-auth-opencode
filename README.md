@@ -15,7 +15,35 @@ Authentication plugin for [OpenCode](https://github.com/opencode-ai/opencode) th
 
 ## Installation
 
-### Option 1: Package Manager
+### Option 1: Directory Plugin (Recommended)
+
+Use the cloned repository directly as a plugin. OpenCode/Bun will load the TypeScript source files without requiring a build step:
+
+```bash
+# Clone the repository
+git clone https://github.com/lion-lef/qwen-auth-opencode.git
+
+# Install dependencies
+cd qwen-auth-opencode
+bun install
+```
+
+Then reference it in your `opencode.json`:
+
+```json
+{
+  "plugin": [
+    "./path/to/qwen-auth-opencode"
+  ]
+}
+```
+
+This is the recommended approach as it:
+- Requires no build step
+- Enables easy local development and debugging
+- Follows the same pattern as [opencode-google-antigravity-auth](https://github.com/shekohex/opencode-google-antigravity-auth)
+
+### Option 2: Package Manager
 
 ```bash
 bun add qwen-auth
@@ -23,9 +51,9 @@ bun add qwen-auth
 npm install qwen-auth
 ```
 
-### Option 2: One-File Plugin (Local)
+### Option 3: One-File Plugin (Standalone)
 
-For local development or standalone use, you can use the bundled one-file plugin:
+For standalone use without dependencies, you can build the bundled one-file plugin:
 
 ```bash
 # Clone the repository
