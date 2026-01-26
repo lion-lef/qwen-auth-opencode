@@ -70,12 +70,13 @@ export type AuthMethod = (typeof AUTH_METHODS)[keyof typeof AUTH_METHODS];
 /**
  * OAuth API configuration for portal.qwen.ai
  * Used for OAuth-authenticated requests
+ *
+ * Note: This is used for the `api.url` and `api.npm` properties of OAuth models.
+ * The `api.id` should be set to the model ID (e.g., "coder-model"), not the provider ID,
+ * because OpenCode uses `model.api.id` as the model identifier sent to the SDK.
  */
-export const QWEN_OAUTH_API = {
-  id: "alibaba",
-  url: "https://portal.qwen.ai/v1",
-  npm: "@ai-sdk/openai-compatible",
-} as const;
+export const QWEN_OAUTH_API_URL = "https://portal.qwen.ai/v1";
+export const QWEN_OAUTH_API_NPM = "@ai-sdk/openai-compatible";
 
 /**
  * OAuth-specific models available through portal.qwen.ai
@@ -85,12 +86,19 @@ export const QWEN_OAUTH_API = {
  * Note: These models include the full structure required by OpenCode's Model type,
  * including the `api` property that specifies the OAuth endpoint (portal.qwen.ai)
  * rather than the DashScope API endpoint.
+ *
+ * IMPORTANT: The `api.id` must be set to the model ID (e.g., "coder-model"), NOT the provider ID.
+ * OpenCode uses `model.api.id` as the model identifier sent to sdk.languageModel(api.id).
  */
 export const QWEN_OAUTH_MODELS = {
   "coder-model": {
     id: "coder-model",
     providerID: QWEN_PROVIDER_ID,
-    api: QWEN_OAUTH_API,
+    api: {
+      id: "coder-model", // Model ID sent to the API, NOT provider ID
+      url: QWEN_OAUTH_API_URL,
+      npm: QWEN_OAUTH_API_NPM,
+    },
     name: "Qwen Coder (OAuth)",
     capabilities: {
       temperature: true,
@@ -130,7 +138,11 @@ export const QWEN_OAUTH_MODELS = {
   "vision-model": {
     id: "vision-model",
     providerID: QWEN_PROVIDER_ID,
-    api: QWEN_OAUTH_API,
+    api: {
+      id: "vision-model", // Model ID sent to the API, NOT provider ID
+      url: QWEN_OAUTH_API_URL,
+      npm: QWEN_OAUTH_API_NPM,
+    },
     name: "Qwen Vision (OAuth)",
     capabilities: {
       temperature: true,
