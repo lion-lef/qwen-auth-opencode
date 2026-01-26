@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
-import { QWEN_PROVIDER_ID, QWEN_MODELS } from "../src/constants";
+import { QWEN_PROVIDER_ID } from "../src/constants";
 
 // Mock fs/promises module
 mock.module("fs/promises", () => ({
@@ -137,15 +137,15 @@ describe("OpenCode Plugin", () => {
   });
 
   describe("auth.loader", () => {
-    it("should filter models to only Qwen models", async () => {
+    it("should not filter models (OpenCode manages model list)", async () => {
       const hooks = await QwenAuthPlugin(mockPluginInput);
 
       const mockProvider = {
         models: {
           "qwen-turbo": {},
           "qwen-plus": {},
-          "gpt-4": {}, // Should be filtered out
-          "claude-3": {}, // Should be filtered out
+          "coder-model": {}, // OAuth-specific model should NOT be filtered
+          "vision-model": {}, // OAuth-specific model should NOT be filtered
         },
       };
 
@@ -154,9 +154,12 @@ describe("OpenCode Plugin", () => {
 
       await hooks.auth?.loader?.(getAuth, mockProvider);
 
-      const qwenModelIds = Object.keys(QWEN_MODELS);
-      expect(mockProvider.models).not.toHaveProperty("gpt-4");
-      expect(mockProvider.models).not.toHaveProperty("claude-3");
+      // All models should remain - we don't filter anymore
+      // This allows OAuth-specific models from models.dev to work
+      expect(mockProvider.models).toHaveProperty("qwen-turbo");
+      expect(mockProvider.models).toHaveProperty("qwen-plus");
+      expect(mockProvider.models).toHaveProperty("coder-model");
+      expect(mockProvider.models).toHaveProperty("vision-model");
     });
 
     it("should return empty object for API key auth", async () => {
@@ -187,6 +190,67 @@ describe("OpenCode Plugin", () => {
 
       expect(result?.apiKey).toBe(OAUTH_DUMMY_KEY);
       expect(result?.fetch).toBeDefined();
+    });
+
+    it("should add OAuth models to provider for OAuth auth", async () => {
+      const hooks = await QwenAuthPlugin(mockPluginInput);
+
+      const mockProvider = {
+        models: {
+          "qwen-turbo": { cost: { input: 1, output: 2 } },
+        } as Record<string, any>,
+      };
+      const mockAuth = {
+        type: "oauth" as const,
+        access: "test-access-token",
+        expires: Date.now() + 3600000,
+        refresh: "test-refresh-token",
+      };
+      const getAuth = mock(() => Promise.resolve(mockAuth));
+
+      await hooks.auth?.loader?.(getAuth, mockProvider);
+
+      // OAuth models should be added to the provider
+      expect(mockProvider.models["coder-model"]).toBeDefined();
+      expect(mockProvider.models["vision-model"]).toBeDefined();
+
+      // Check OAuth model properties
+      expect(mockProvider.models["coder-model"].id).toBe("coder-model");
+      expect(mockProvider.models["coder-model"].cost.input).toBe(0);
+      expect(mockProvider.models["coder-model"].cost.output).toBe(0);
+
+      expect(mockProvider.models["vision-model"].id).toBe("vision-model");
+      expect(mockProvider.models["vision-model"].capabilities.attachment).toBe(true); // Vision model supports attachments
+
+      // Verify OAuth models have the required api property for OpenCode
+      expect(mockProvider.models["coder-model"].api).toBeDefined();
+      expect(mockProvider.models["coder-model"].api.url).toBe("https://portal.qwen.ai/v1");
+      expect(mockProvider.models["vision-model"].api).toBeDefined();
+      expect(mockProvider.models["vision-model"].api.url).toBe("https://portal.qwen.ai/v1");
+
+      // Existing models should be preserved
+      expect(mockProvider.models["qwen-turbo"]).toBeDefined();
+    });
+
+    it("should NOT add OAuth models for API key auth", async () => {
+      const hooks = await QwenAuthPlugin(mockPluginInput);
+
+      const mockProvider = {
+        models: {
+          "qwen-turbo": { cost: { input: 1, output: 2 } },
+        } as Record<string, any>,
+      };
+      const mockAuth = { type: "api" as const };
+      const getAuth = mock(() => Promise.resolve(mockAuth));
+
+      await hooks.auth?.loader?.(getAuth, mockProvider);
+
+      // OAuth models should NOT be added for API key auth
+      expect(mockProvider.models["coder-model"]).toBeUndefined();
+      expect(mockProvider.models["vision-model"]).toBeUndefined();
+
+      // Existing models should still be there
+      expect(mockProvider.models["qwen-turbo"]).toBeDefined();
     });
   });
 });
@@ -246,35 +310,55 @@ describe("Root index.ts exports - OpenCode compatibility", () => {
     expect(rootModule.default).toBe(rootModule.QwenAuthPlugin);
   });
 
-  it("should export credential storage functions", async () => {
+  it("should ONLY export QwenAuthPlugin and default (nothing else)", async () => {
     const rootModule = await import("../index");
+    const exportedKeys = Object.keys(rootModule);
 
-    expect(typeof rootModule.loadCredentials).toBe("function");
-    expect(typeof rootModule.saveCredentials).toBe("function");
-    expect(typeof rootModule.clearCredentials).toBe("function");
-    expect(typeof rootModule.getCredentialsPath).toBe("function");
+    // Only QwenAuthPlugin and default should be exported
+    // All other functions must be imported from sub-modules to avoid
+    // OpenCode calling them without proper arguments
+    expect(exportedKeys.sort()).toEqual(["QwenAuthPlugin", "default"]);
   });
 
-  it("should export auth helper functions", async () => {
+  it("should NOT export credential storage functions (use sub-modules)", async () => {
     const rootModule = await import("../index");
 
-    expect(typeof rootModule.isOAuthAuth).toBe("function");
-    expect(typeof rootModule.isApiAuth).toBe("function");
-    expect(typeof rootModule.accessTokenExpired).toBe("function");
-    expect(typeof rootModule.tokenNeedsRefresh).toBe("function");
-    expect(typeof rootModule.calculateExpiresAt).toBe("function");
+    // These should NOT be exported because OpenCode calls all exports as functions
+    // Import from sub-modules: import { loadCredentials } from "qwen-auth/src/plugin"
+    expect(rootModule).not.toHaveProperty("loadCredentials");
+    expect(rootModule).not.toHaveProperty("saveCredentials");
+    expect(rootModule).not.toHaveProperty("clearCredentials");
+    expect(rootModule).not.toHaveProperty("getCredentialsPath");
   });
 
-  it("should export OAuth flow functions and class", async () => {
+  it("should NOT export auth helper functions (use sub-modules)", async () => {
     const rootModule = await import("../index");
 
-    expect(typeof rootModule.QwenOAuthDeviceFlow).toBe("function"); // Class
-    expect(typeof rootModule.generateCodeVerifier).toBe("function");
-    expect(typeof rootModule.generateCodeChallenge).toBe("function");
-    expect(typeof rootModule.generatePKCEPair).toBe("function");
-    expect(typeof rootModule.requestDeviceAuthorization).toBe("function");
-    expect(typeof rootModule.pollDeviceToken).toBe("function");
-    expect(typeof rootModule.refreshAccessToken).toBe("function");
+    // These should NOT be exported because they throw errors when called without args
+    // Import from sub-modules: import { isOAuthAuth } from "qwen-auth/src/plugin"
+    expect(rootModule).not.toHaveProperty("isOAuthAuth");
+    expect(rootModule).not.toHaveProperty("isApiAuth");
+    expect(rootModule).not.toHaveProperty("accessTokenExpired");
+    expect(rootModule).not.toHaveProperty("tokenNeedsRefresh");
+    expect(rootModule).not.toHaveProperty("calculateExpiresAt");
+  });
+
+  it("should NOT export OAuth flow functions (use sub-modules)", async () => {
+    const rootModule = await import("../index");
+
+    // Neither classes nor functions should be exported from root
+    // All cause errors when OpenCode calls them without proper arguments:
+    // - Classes: "Cannot call a class constructor without |new|"
+    // - Functions with required args: "The 'data' argument must be of type string..."
+    // Import from sub-modules if needed:
+    // - import { QwenOAuthDeviceFlow, generateCodeVerifier } from "qwen-auth/src/qwen-oauth"
+    expect(rootModule).not.toHaveProperty("QwenOAuthDeviceFlow");
+    expect(rootModule).not.toHaveProperty("generateCodeVerifier");
+    expect(rootModule).not.toHaveProperty("generateCodeChallenge");
+    expect(rootModule).not.toHaveProperty("generatePKCEPair");
+    expect(rootModule).not.toHaveProperty("requestDeviceAuthorization");
+    expect(rootModule).not.toHaveProperty("pollDeviceToken");
+    expect(rootModule).not.toHaveProperty("refreshAccessToken");
   });
 
   it("should NOT export numeric constants that would cause OpenCode errors", async () => {
@@ -300,5 +384,18 @@ describe("Root index.ts exports - OpenCode compatibility", () => {
     expect(rootModule).not.toHaveProperty("QWEN_HEADERS");
     expect(rootModule).not.toHaveProperty("OAUTH_DUMMY_KEY");
     expect(rootModule).not.toHaveProperty("QwenAuthConfigSchema");
+  });
+
+  it("should NOT export classes that would cause OpenCode errors", async () => {
+    const rootModule = await import("../index");
+
+    // Classes should NOT be exported from root index.ts because OpenCode
+    // iterates through exports and calls them as functions without 'new' keyword.
+    // This causes "Cannot call a class constructor without |new|" errors.
+    // Import classes directly from sub-modules if needed:
+    // - import { ApiKeyAuthProvider } from "qwen-auth/src/auth"
+    // - import { QwenOAuthDeviceFlow } from "qwen-auth/src/qwen-oauth"
+    expect(rootModule).not.toHaveProperty("ApiKeyAuthProvider");
+    expect(rootModule).not.toHaveProperty("QwenOAuthDeviceFlow");
   });
 });

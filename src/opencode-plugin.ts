@@ -11,7 +11,7 @@
  */
 
 import { QwenOAuthDeviceFlow } from "./qwen-oauth";
-import { QWEN_PROVIDER_ID, QWEN_MODELS } from "./constants";
+import { QWEN_PROVIDER_ID, QWEN_OAUTH_MODELS } from "./constants";
 import {
   type PluginContext,
   type Hooks,
@@ -44,23 +44,30 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
       /**
        * Loader function called when authentication is needed
        * Handles token refresh and request interception
+       *
+       * For OAuth authentication, we add OAuth-specific models (coder-model, vision-model)
+       * to the provider's model list. These models are available through portal.qwen.ai
+       * and use the free OAuth tier.
        */
       async loader(getAuth: GetAuth, provider: Provider) {
         const auth = await getAuth();
 
-        // Filter models to only include Qwen models
-        const qwenModelIds = Object.keys(QWEN_MODELS);
-        if (provider.models) {
-          for (const modelId of Object.keys(provider.models)) {
-            if (!qwenModelIds.includes(modelId)) {
-              delete provider.models[modelId];
-            }
-          }
-        }
-
         // If using API key authentication, no special handling needed
         if (!isOAuthAuth(auth)) {
           return {};
+        }
+
+        // Add OAuth-specific models to the provider's model list
+        // These models are available through portal.qwen.ai OAuth
+        // The models include the full OpenCode Model structure with the `api` property
+        // pointing to portal.qwen.ai instead of the DashScope API
+        if (provider.models) {
+          for (const [modelId, modelConfig] of Object.entries(QWEN_OAUTH_MODELS)) {
+            // Cast to any to satisfy TypeScript since provider.models expects Model type
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            provider.models[modelId] = modelConfig as any;
+          }
+          logDebugMessage(`[Qwen Auth] Added OAuth models to provider: ${Object.keys(QWEN_OAUTH_MODELS).join(", ")}`);
         }
 
         // Return OAuth fetch wrapper

@@ -117,7 +117,7 @@ async function main() {
     const mockInput = {
       sessionID: "test-session",
       agent: "coder",
-      model: { providerID: "qwen", modelID: "qwen-coder-plus" },
+      model: { providerID: "alibaba", modelID: "qwen-coder-plus" },
       provider: {},
       message: {},
     };
