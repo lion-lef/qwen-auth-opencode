@@ -161,7 +161,9 @@ export function createOAuthFetch(
           currentAuth = await getAuth();
         } catch (error) {
           console.error("Failed to refresh Qwen OAuth token:", error);
-          throw new Error("Qwen OAuth token refresh failed. Please re-authenticate.");
+          throw new Error("Qwen OAuth token refresh failed. Please re-authenticate.", {
+            cause: error,
+          });
         }
       }
     }

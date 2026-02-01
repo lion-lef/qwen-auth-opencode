@@ -164,7 +164,7 @@ export async function pollDeviceToken(
       if (e instanceof Error && e.message.startsWith("Token poll failed")) {
         throw e;
       }
-      throw new Error(`Token poll failed: ${response.status} - ${errorData}`);
+      throw new Error(`Token poll failed: ${response.status} - ${errorData}`, { cause: e });
     }
   }
 

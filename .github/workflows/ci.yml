@@ -22,10 +22,10 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Lint
+      - name: Lint (oxlint)
         run: bun run lint
 
-      - name: Check formatting
+      - name: Check formatting (oxfmt)
         run: bun run format:check
 
   test:
