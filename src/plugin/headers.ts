@@ -8,7 +8,7 @@ import * as os from "os";
 /**
  * Package version (should match package.json)
  */
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 
 /**
  * Get the User-Agent string for Qwen API requests
