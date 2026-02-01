@@ -4,7 +4,7 @@
  * Similar to opencode-gemini-auth pattern
  */
 
-import { createWriteStream, type WriteStream } from "node:fs";
+import { createWriteStream } from "node:fs";
 import { join } from "node:path";
 import { cwd, env } from "node:process";
 
@@ -119,7 +119,7 @@ export function startQwenDebugRequest(meta: QwenDebugRequestMeta): QwenDebugCont
 export function logQwenDebugResponse(
   context: QwenDebugContext | null | undefined,
   response: Response,
-  meta: QwenDebugResponseMeta = {}
+  meta: QwenDebugResponseMeta = {},
 ): void {
   if (!debugEnabled || !context) {
     return;
@@ -128,12 +128,12 @@ export function logQwenDebugResponse(
   const durationMs = Date.now() - context.startedAt;
 
   logDebug(
-    `[Qwen Debug ${context.id}] Response ${response.status} ${response.statusText} (${durationMs}ms)`
+    `[Qwen Debug ${context.id}] Response ${response.status} ${response.statusText} (${durationMs}ms)`,
   );
   logDebug(
     `[Qwen Debug ${context.id}] Response Headers: ${JSON.stringify(
-      maskHeaders(meta.headersOverride ?? response.headers)
-    )}`
+      maskHeaders(meta.headersOverride ?? response.headers),
+    )}`,
   );
 
   if (meta.note) {
@@ -145,9 +145,7 @@ export function logQwenDebugResponse(
   }
 
   if (meta.body) {
-    logDebug(
-      `[Qwen Debug ${context.id}] Response Body Preview: ${truncateForLog(meta.body)}`
-    );
+    logDebug(`[Qwen Debug ${context.id}] Response Body Preview: ${truncateForLog(meta.body)}`);
   }
 }
 

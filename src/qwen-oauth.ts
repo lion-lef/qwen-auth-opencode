@@ -102,7 +102,7 @@ export async function requestDeviceAuthorization(): Promise<DeviceAuthorizationR
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Accept": "application/json",
+      Accept: "application/json",
     },
     body: body.toString(),
   });
@@ -115,7 +115,9 @@ export async function requestDeviceAuthorization(): Promise<DeviceAuthorizationR
   const result = await response.json();
 
   if (isErrorResponse(result)) {
-    throw new Error(`Device authorization failed: ${result.error} - ${result.error_description || "Unknown error"}`);
+    throw new Error(
+      `Device authorization failed: ${result.error} - ${result.error_description || "Unknown error"}`,
+    );
   }
 
   return result as DeviceAuthorizationResponse;
@@ -126,7 +128,7 @@ export async function requestDeviceAuthorization(): Promise<DeviceAuthorizationR
  */
 export async function pollDeviceToken(
   deviceCode: string,
-  codeVerifier: string
+  codeVerifier: string,
 ): Promise<QwenTokenResponse | "pending" | "slow_down"> {
   const body = new URLSearchParams({
     grant_type: QWEN_OAUTH_GRANT_TYPE,
@@ -139,7 +141,7 @@ export async function pollDeviceToken(
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Accept": "application/json",
+      Accept: "application/json",
     },
     body: body.toString(),
   });
@@ -155,7 +157,9 @@ export async function pollDeviceToken(
       if (parsed.error === "slow_down") {
         return "slow_down";
       }
-      throw new Error(`Token poll failed: ${parsed.error} - ${parsed.error_description || errorData}`);
+      throw new Error(
+        `Token poll failed: ${parsed.error} - ${parsed.error_description || errorData}`,
+      );
     } catch (e) {
       if (e instanceof Error && e.message.startsWith("Token poll failed")) {
         throw e;
@@ -181,7 +185,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<QwenToke
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Accept": "application/json",
+      Accept: "application/json",
     },
     body: body.toString(),
   });
@@ -231,7 +235,7 @@ export class QwenOAuthDeviceFlow {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Accept": "application/json",
+        Accept: "application/json",
       },
       body: body.toString(),
     });
@@ -241,7 +245,7 @@ export class QwenOAuthDeviceFlow {
       throw new Error(`Device authorization failed: ${response.status} - ${errorText}`);
     }
 
-    const result = await response.json() as DeviceAuthorizationResponse;
+    const result = (await response.json()) as DeviceAuthorizationResponse;
 
     this.deviceCode = result.device_code;
     if (result.interval) {

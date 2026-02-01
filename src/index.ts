@@ -79,11 +79,7 @@ export {
   refreshAccessToken,
   QWEN_OAUTH_CONSTANTS,
 } from "./qwen-oauth";
-export type {
-  QwenCredentials,
-  QwenTokenResponse,
-  DeviceAuthorizationResponse,
-} from "./qwen-oauth";
+export type { QwenCredentials, QwenTokenResponse, DeviceAuthorizationResponse } from "./qwen-oauth";
 
 // Configuration exports
 export {
@@ -95,17 +91,8 @@ export {
 export type { QwenAuthConfig, ApiKeyConfig } from "./config";
 
 // Authentication exports
-export {
-  ApiKeyAuthProvider,
-  validateApiKeyFormat,
-  maskApiKey,
-} from "./auth";
-export type {
-  AuthProvider,
-  AuthResult,
-  TokenInfo,
-  ApiRequestConfig,
-} from "./auth";
+export { ApiKeyAuthProvider, validateApiKeyFormat, maskApiKey } from "./auth";
+export type { AuthProvider, AuthResult, TokenInfo, ApiRequestConfig } from "./auth";
 
 // Utility exports
 export { createLogger, getLogger } from "./utils";

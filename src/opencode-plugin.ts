@@ -29,7 +29,13 @@ import {
 } from "./plugin";
 
 // Re-export for backward compatibility
-export { loadCredentials, saveCredentials, clearCredentials, OAUTH_DUMMY_KEY, getCredentialsPath } from "./plugin";
+export {
+  loadCredentials,
+  saveCredentials,
+  clearCredentials,
+  OAUTH_DUMMY_KEY,
+  getCredentialsPath,
+} from "./plugin";
 
 /**
  * Main Qwen Auth Plugin for OpenCode
@@ -67,7 +73,9 @@ export async function QwenAuthPlugin(input: PluginContext): Promise<Hooks> {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             provider.models[modelId] = modelConfig as any;
           }
-          logDebugMessage(`[Qwen Auth] Added OAuth models to provider: ${Object.keys(QWEN_OAUTH_MODELS).join(", ")}`);
+          logDebugMessage(
+            `[Qwen Auth] Added OAuth models to provider: ${Object.keys(QWEN_OAUTH_MODELS).join(", ")}`,
+          );
         }
 
         // Return OAuth fetch wrapper

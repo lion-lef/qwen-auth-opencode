@@ -20,9 +20,7 @@ export function isOAuthAuth(auth: AuthDetails): auth is OAuthAuthDetails {
 /**
  * Type guard to check if auth is API type
  */
-export function isApiAuth(
-  auth: AuthDetails
-): auth is { type: "api"; key?: string } {
+export function isApiAuth(auth: AuthDetails): auth is { type: "api"; key?: string } {
   return auth.type === "api";
 }
 

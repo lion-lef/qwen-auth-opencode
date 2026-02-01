@@ -6,7 +6,8 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { QwenAuthConfig, validateConfig, createDefaultApiKeyConfig } from "./schema";
+import type { QwenAuthConfig } from "./schema";
+import { validateConfig, createDefaultApiKeyConfig } from "./schema";
 
 /** Environment variable names for configuration */
 const ENV_VARS = {

@@ -88,11 +88,7 @@ export class Logger {
    * Create a child logger with a sub-prefix
    */
   child(subPrefix: string): Logger {
-    return new Logger(
-      `${this.config.prefix}:${subPrefix}`,
-      this.config.enabled,
-      this.config.level
-    );
+    return new Logger(`${this.config.prefix}:${subPrefix}`, this.config.enabled, this.config.level);
   }
 
   /**
