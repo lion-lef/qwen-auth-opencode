@@ -5,8 +5,6 @@
  */
 
 import { randomBytes, createHash } from "node:crypto";
-import { createServer, type Server } from "node:http";
-import { exec } from "node:child_process";
 
 // Qwen OAuth Endpoints (from qwen-code)
 const QWEN_OAUTH_BASE_URL = "https://chat.qwen.ai";
@@ -17,10 +15,6 @@ const QWEN_OAUTH_TOKEN_ENDPOINT = `${QWEN_OAUTH_BASE_URL}/api/v1/oauth2/token`;
 const QWEN_OAUTH_CLIENT_ID = "f0304373b74a44d2b584a3fb70ca9e56";
 const QWEN_OAUTH_SCOPE = "openid profile email model.completion";
 const QWEN_OAUTH_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
-
-// Local callback server configuration (for compatibility with non-device flow)
-export const QWEN_OAUTH_PORT = 7777;
-export const QWEN_OAUTH_REDIRECT_PATH = "/oauth/callback";
 
 /**
  * PKCE (Proof Key for Code Exchange) utilities
@@ -108,7 +102,7 @@ export async function requestDeviceAuthorization(): Promise<DeviceAuthorizationR
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Accept": "application/json",
+      Accept: "application/json",
     },
     body: body.toString(),
   });
@@ -121,7 +115,9 @@ export async function requestDeviceAuthorization(): Promise<DeviceAuthorizationR
   const result = await response.json();
 
   if (isErrorResponse(result)) {
-    throw new Error(`Device authorization failed: ${result.error} - ${result.error_description || "Unknown error"}`);
+    throw new Error(
+      `Device authorization failed: ${result.error} - ${result.error_description || "Unknown error"}`,
+    );
   }
 
   return result as DeviceAuthorizationResponse;
@@ -132,7 +128,7 @@ export async function requestDeviceAuthorization(): Promise<DeviceAuthorizationR
  */
 export async function pollDeviceToken(
   deviceCode: string,
-  codeVerifier: string
+  codeVerifier: string,
 ): Promise<QwenTokenResponse | "pending" | "slow_down"> {
   const body = new URLSearchParams({
     grant_type: QWEN_OAUTH_GRANT_TYPE,
@@ -145,7 +141,7 @@ export async function pollDeviceToken(
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Accept": "application/json",
+      Accept: "application/json",
     },
     body: body.toString(),
   });
@@ -161,12 +157,14 @@ export async function pollDeviceToken(
       if (parsed.error === "slow_down") {
         return "slow_down";
       }
-      throw new Error(`Token poll failed: ${parsed.error} - ${parsed.error_description || errorData}`);
+      throw new Error(
+        `Token poll failed: ${parsed.error} - ${parsed.error_description || errorData}`,
+      );
     } catch (e) {
       if (e instanceof Error && e.message.startsWith("Token poll failed")) {
         throw e;
       }
-      throw new Error(`Token poll failed: ${response.status} - ${errorData}`);
+      throw new Error(`Token poll failed: ${response.status} - ${errorData}`, { cause: e });
     }
   }
 
@@ -187,7 +185,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<QwenToke
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
-      "Accept": "application/json",
+      Accept: "application/json",
     },
     body: body.toString(),
   });
@@ -198,22 +196,6 @@ export async function refreshAccessToken(refreshToken: string): Promise<QwenToke
   }
 
   return response.json() as Promise<QwenTokenResponse>;
-}
-
-/**
- * Open URL in default browser
- */
-export function openBrowser(url: string): void {
-  const platform = process.platform;
-
-  if (platform === "darwin") {
-    exec(`open "${url}"`);
-  } else if (platform === "win32") {
-    exec(`start "" "${url}"`);
-  } else {
-    // Linux and others
-    exec(`xdg-open "${url}"`);
-  }
 }
 
 /**
@@ -253,7 +235,7 @@ export class QwenOAuthDeviceFlow {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "Accept": "application/json",
+        Accept: "application/json",
       },
       body: body.toString(),
     });
@@ -263,7 +245,7 @@ export class QwenOAuthDeviceFlow {
       throw new Error(`Device authorization failed: ${response.status} - ${errorText}`);
     }
 
-    const result = await response.json() as DeviceAuthorizationResponse;
+    const result = (await response.json()) as DeviceAuthorizationResponse;
 
     this.deviceCode = result.device_code;
     if (result.interval) {
@@ -329,76 +311,6 @@ export class QwenOAuthDeviceFlow {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
-
-// HTML templates for OAuth callback server (fallback for non-device flows)
-export const HTML_SUCCESS = `<!doctype html>
-<html>
-  <head>
-    <title>Qwen Auth - Authorization Successful</title>
-    <style>
-      body {
-        font-family: system-ui, -apple-system, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-        background: #1a1a2e;
-        color: #eee;
-      }
-      .container {
-        text-align: center;
-        padding: 2rem;
-      }
-      h1 { color: #4ade80; margin-bottom: 1rem; }
-      p { color: #a3a3a3; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Authorization Successful</h1>
-      <p>You can close this window and return to your terminal.</p>
-    </div>
-    <script>setTimeout(() => window.close(), 2000);</script>
-  </body>
-</html>`;
-
-export const HTML_ERROR = (error: string) => `<!doctype html>
-<html>
-  <head>
-    <title>Qwen Auth - Authorization Failed</title>
-    <style>
-      body {
-        font-family: system-ui, -apple-system, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-        background: #1a1a2e;
-        color: #eee;
-      }
-      .container { text-align: center; padding: 2rem; }
-      h1 { color: #f87171; margin-bottom: 1rem; }
-      p { color: #a3a3a3; }
-      .error {
-        color: #fca5a5;
-        font-family: monospace;
-        margin-top: 1rem;
-        padding: 1rem;
-        background: #3b1d1d;
-        border-radius: 0.5rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Authorization Failed</h1>
-      <p>An error occurred during authorization.</p>
-      <div class="error">${error}</div>
-    </div>
-  </body>
-</html>`;
 
 /**
  * Export constants for use in other modules

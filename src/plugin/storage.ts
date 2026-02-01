@@ -51,9 +51,7 @@ export async function loadCredentials(): Promise<StoredCredentials | null> {
  * Creates the directory if it doesn't exist
  * @param credentials The credentials to save
  */
-export async function saveCredentials(
-  credentials: StoredCredentials
-): Promise<void> {
+export async function saveCredentials(credentials: StoredCredentials): Promise<void> {
   const credPath = getCredentialsPath();
   const dir = path.dirname(credPath);
 

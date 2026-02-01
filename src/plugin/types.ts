@@ -138,7 +138,7 @@ export interface AuthMethod {
   type: "oauth" | "api";
   prompts?: AuthPrompt[];
   authorize?: (
-    inputs?: Record<string, string>
+    inputs?: Record<string, string>,
   ) => Promise<AuthOAuthResult | AuthApiResult | { type: "failed" }>;
 }
 
@@ -182,10 +182,7 @@ export interface ChatHeadersOutput {
  */
 export interface Hooks {
   auth?: AuthHook;
-  "chat.headers"?: (
-    input: ChatHeadersInput,
-    output: ChatHeadersOutput
-  ) => Promise<void>;
+  "chat.headers"?: (input: ChatHeadersInput, output: ChatHeadersOutput) => Promise<void>;
 }
 
 /**

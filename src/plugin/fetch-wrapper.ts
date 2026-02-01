@@ -17,10 +17,7 @@ const QWEN_OAUTH_API_BASE = "https://portal.qwen.ai/v1";
 /**
  * DashScope API base URLs (for detection and rewriting)
  */
-const DASHSCOPE_API_PATTERNS = [
-  "dashscope.aliyuncs.com",
-  "dashscope-intl.aliyuncs.com",
-];
+const DASHSCOPE_API_PATTERNS = ["dashscope.aliyuncs.com", "dashscope-intl.aliyuncs.com"];
 
 /**
  * OAuth dummy key used for OAuth authentication (OpenCode convention)
@@ -32,9 +29,7 @@ export const OAUTH_DUMMY_KEY = "sk-oauth-qwen-auth";
  * Remove authorization headers from headers object
  * Supports Headers, array, and object formats
  */
-function removeAuthorizationHeader(
-  headers: HeadersInit | undefined
-): HeadersInit | undefined {
+function removeAuthorizationHeader(headers: HeadersInit | undefined): HeadersInit | undefined {
   if (!headers) return headers;
 
   if (headers instanceof Headers) {
@@ -128,11 +123,11 @@ function extractUrl(input: RequestInfo | URL): string {
  */
 export function createOAuthFetch(
   getAuth: GetAuth,
-  client: PluginClient
+  client: PluginClient,
 ): (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
   return async function oauthFetch(
     requestInput: RequestInfo | URL,
-    init?: RequestInit
+    init?: RequestInit,
   ): Promise<Response> {
     // Remove dummy API key authorization header if present
     if (init?.headers) {
@@ -166,9 +161,9 @@ export function createOAuthFetch(
           currentAuth = await getAuth();
         } catch (error) {
           console.error("Failed to refresh Qwen OAuth token:", error);
-          throw new Error(
-            "Qwen OAuth token refresh failed. Please re-authenticate."
-          );
+          throw new Error("Qwen OAuth token refresh failed. Please re-authenticate.", {
+            cause: error,
+          });
         }
       }
     }

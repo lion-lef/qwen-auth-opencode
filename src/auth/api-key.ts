@@ -84,15 +84,13 @@ export class ApiKeyAuthProvider implements AuthProvider {
    * Get the API request configuration for making authenticated requests
    */
   getRequestConfig(): ApiRequestConfig {
-    const baseUrl = this.config.baseUrl || (
-      this.useInternational
-        ? QWEN_API_ENDPOINTS.international
-        : QWEN_API_ENDPOINTS.primary
-    );
+    const baseUrl =
+      this.config.baseUrl ||
+      (this.useInternational ? QWEN_API_ENDPOINTS.international : QWEN_API_ENDPOINTS.primary);
 
     return {
       headers: {
-        "Authorization": `Bearer ${this.config.apiKey}`,
+        Authorization: `Bearer ${this.config.apiKey}`,
         "Content-Type": "application/json",
       },
       baseUrl,

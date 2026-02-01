@@ -55,12 +55,7 @@ export { openBrowser, isHeadlessEnvironment } from "./browser";
 export { createOAuthFetch, OAUTH_DUMMY_KEY } from "./fetch-wrapper";
 
 // Headers exports
-export {
-  getUserAgent,
-  getDashScopeClient,
-  QWEN_HEADERS,
-  applyQwenHeaders,
-} from "./headers";
+export { getUserAgent, getDashScopeClient, QWEN_HEADERS, applyQwenHeaders } from "./headers";
 
 // Debug exports
 export {
@@ -70,8 +65,4 @@ export {
   logQwenDebugResponse,
   logDebugMessage,
 } from "./debug";
-export type {
-  QwenDebugContext,
-  QwenDebugRequestMeta,
-  QwenDebugResponseMeta,
-} from "./debug";
+export type { QwenDebugContext, QwenDebugRequestMeta, QwenDebugResponseMeta } from "./debug";
