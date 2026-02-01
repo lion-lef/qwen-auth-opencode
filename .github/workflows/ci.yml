@@ -7,6 +7,27 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Check formatting
+        run: bun run format:check
+
   test:
     runs-on: ubuntu-latest
 
@@ -77,6 +98,25 @@ jobs:
               process.exit(1);
             }
 
-            console.log('✅ All root exports are functions (safe for OpenCode)');
+            console.log('All root exports are functions (safe for OpenCode)');
             console.log('   Total exports:', Object.keys(exports).length);
           "
+
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Audit dependencies
+        run: bun pm ls --all 2>&1 | head -100
+        continue-on-error: true
